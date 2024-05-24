@@ -1,0 +1,5 @@
+tasks:
+  - name: "Print working directory"
+    command: "pwd"
+  - name: "List files"
+    command: "ls -l"
