@@ -1,3 +1,12 @@
+# Description: This is a simple playbook that runs two commands on the local host.
+---
+name: demo-playbook
+settings:
+  name: "Run commands on the local host"
+  vars:
+    ansible_connection: "local"
+    ansible_python_interpreter: "/usr/bin/python3"
+  
 tasks:
   - name: "Print working directory"
     command: "pwd"

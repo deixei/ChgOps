@@ -10,7 +10,14 @@ struct Task {
 }
 
 #[derive(Debug, Deserialize)]
+struct Settings {
+    name: String
+}
+
+#[derive(Debug, Deserialize)]
 struct Playbook {
+    name: String,
+    settings: Settings,
     tasks: Vec<Task>,
 }
 
@@ -20,6 +27,10 @@ fn main() {
 
     let playbook: Playbook = serde_yaml::from_str(&playbook_yaml)
         .expect("Failed to parse playbook");
+
+    println!("Playbook name: {}", playbook.name);
+
+    println!("Settings name: {}", playbook.settings.name);
 
     for task in playbook.tasks {
         println!("Running task: {}", task.name);
@@ -32,6 +43,11 @@ fn main() {
         if !output.status.success() {
             eprintln!("Task '{}' failed with exit code: {}", task.name, output.status);
             break;
+        }
+        else {
+            let output_str = String::from_utf8_lossy(&output.stdout);
+            let output_str = output_str.replace("\\n", "\n");
+            println!("Output: {}", output_str);
         }
     }
 }
