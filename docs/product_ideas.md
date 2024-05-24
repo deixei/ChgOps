@@ -58,3 +58,33 @@ chgops download --name az_deixei --version latest
 - variables value manipulations (call functions)
 
 - invoke a task in another file
+
+
+## Software Arch ??
+playbook
+    mod.rs
+    models.rs
+    run.rs
+    tasks.rs
+    vars.rs
+    blocks.rs
+    foreach.rs
+    
+handlers
+    init.rs
+
+Commands
+    mod.rs
+    run.rs
+    init.rs
+
+main.rs
+
+
+### dependencies
+
+Serge for yaml
+clap for CLI parsing
+
+https://azure.github.io/azure-sdk/rust_introduction.html
+
