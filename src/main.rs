@@ -1,17 +1,13 @@
 use clap::{Command, Arg};
-use std::env;
+
 
 pub mod playbook_engine; // Add this import statement
 use playbook_engine::{ EngineParameters };
-use std::path::PathBuf; // Add this import statement
 
 
 
 
 fn cli() -> Command {
-
-    let current_dir: PathBuf = env::current_dir().unwrap(); //.to_str().unwrap().to_owned();
-    println!("The current directory is {}", current_dir.display());
 
     Command::new("chgops")
         .about("ChgOps - Change management and operations tool")
@@ -40,7 +36,7 @@ fn cli() -> Command {
                 .arg(Arg::new("path")
                     .long("path")
                     .short('p')
-                    .default_value(".")
+                    .default_value("")
                     .required(false))
                 .arg(Arg::new("verbose")
                     .long("verbose")
