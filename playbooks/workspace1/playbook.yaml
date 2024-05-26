@@ -3,3 +3,14 @@
 ---
 name: demo-playbook
 change_id: 0
+settings:
+  name: "Run commands on the local host"
+  vars:
+    ansible_connection: "local"
+    ansible_python_interpreter: "/usr/bin/python3"
+  
+tasks:
+  - name: "Print working directory"
+    command: "pwd"
+  - name: "List files"
+    command: "ls -l"
