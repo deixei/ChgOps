@@ -1,0 +1,7 @@
+#!chgops.vars
+---
+params:
+  param1: this is a input parameter
+vars:
+  var1: this is a string variable
+  var2: base on {{ param.param1 }} information

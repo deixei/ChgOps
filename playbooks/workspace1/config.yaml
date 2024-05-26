@@ -1,0 +1,7 @@
+#!chgops.config
+# Description: This is the configuration file for the workspace.
+dependencies:
+  source: https://deixei.azure.com
+  collections:
+    - name: dx.azure
+      version: 1.0.0

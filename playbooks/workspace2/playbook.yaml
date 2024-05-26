@@ -1,0 +1,4 @@
+#!chgops
+# Description: This is a simple playbook that runs two commands on the local host.
+---
+name: demo-playbook

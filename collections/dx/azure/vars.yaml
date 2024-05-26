@@ -1,0 +1,8 @@
+#!chgops.vars
+# Description: Variables for the deixei Azure collection
+resource_types:
+  - virtual_machines
+  - virtual_networks
+  - resource_groups
+  - storage_accounts
+

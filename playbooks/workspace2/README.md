@@ -1,5 +1,4 @@
-# ChgOps
-Change management (Chg) and Operations (Ops)
+# Workspace 2 playbooks
 
 
 ## Author

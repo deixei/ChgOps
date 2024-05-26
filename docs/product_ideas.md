@@ -51,7 +51,7 @@ chgops download --name az_deixei --version latest
 
 - display tasks
 
-- accert tasks
+- assert tasks
 
 - set values tasks
 
@@ -59,8 +59,23 @@ chgops download --name az_deixei --version latest
 
 - invoke a task in another file
 
+- run ARM templates against Azure
+
+- run TF scripts
+
+- run python
+
+- run bash
+
+- run win_cmd
+
+- run PS (core)?
+
+- process a Jinja or similar template
+
 
 ## Software Arch ??
+
 playbook
     mod.rs
     models.rs
@@ -69,7 +84,7 @@ playbook
     vars.rs
     blocks.rs
     foreach.rs
-    
+
 handlers
     init.rs
 
@@ -80,7 +95,6 @@ Commands
 
 main.rs
 
-
 ### dependencies
 
 Serge for yaml
@@ -88,3 +102,5 @@ clap for CLI parsing
 
 https://azure.github.io/azure-sdk/rust_introduction.html
 
+Jinja2: https://docs.rs/minijinja/latest/minijinja/
+Tera for templating: https://docs.rs/tera/latest/tera/
