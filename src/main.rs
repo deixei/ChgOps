@@ -1,8 +1,18 @@
 use clap::{Command, Arg};
+use std::env;
 
 pub mod playbook_engine; // Add this import statement
+use playbook_engine::{ EngineParameters };
+use std::path::PathBuf; // Add this import statement
+
+
+
 
 fn cli() -> Command {
+
+    let current_dir: PathBuf = env::current_dir().unwrap(); //.to_str().unwrap().to_owned();
+    println!("The current directory is {}", current_dir.display());
+
     Command::new("chgops")
         .about("ChgOps - Change management and operations tool")
         .version("1.0")
@@ -22,10 +32,16 @@ fn cli() -> Command {
         .subcommand(
             Command::new("run")
                 .about("Runs a playbook")
-                .arg(Arg::new("playbook")
-                    .long("playbook")
+                .arg(Arg::new("name")
+                    .long("name")
+                    .short('n')
+                    .default_value("playbook")
+                    .required(false))
+                .arg(Arg::new("path")
+                    .long("path")
                     .short('p')
-                    .required(true))
+                    .default_value(".")
+                    .required(false))
                 .arg(Arg::new("verbose")
                     .long("verbose")
                     .short('v')
@@ -35,6 +51,7 @@ fn cli() -> Command {
                 .arg(Arg::new("arguments")
                     .long("arguments")
                     .short('a')
+                    .default_value("STAGE=dev")
                     .required(false)),
         )
         .subcommand(
@@ -97,15 +114,27 @@ fn main() {
 
         }
         Some(("run", sub_matches)) => {
-            let playbook = sub_matches.get_one::<String>("playbook").expect("required");
+            
+            let playbook_name = sub_matches.get_one::<String>("name").expect("required");
+            let workspace_path = sub_matches.get_one::<String>("path").expect("required");
+            let verbose = sub_matches.get_one::<String>("verbose").expect("required");
+            let arguments = sub_matches.get_one::<String>("arguments").expect("required");
+
             println!(
                 "Running playbook: {}, verbose: {}, arguments: {}",
-                playbook,
-                sub_matches.get_one::<String>("verbose").expect("required"),
-                sub_matches.get_one::<String>("arguments").expect("required")
+                playbook_name,
+                verbose,
+                arguments
             );
 
-            playbook_engine::engine_run(playbook.to_string(), "template".to_string());
+            let input_params: EngineParameters = playbook_engine::EngineParameters {
+                playbook_name: playbook_name.to_string(),
+                workspace_path: workspace_path.to_string(),
+                verbose: verbose.to_string(),
+                arguments: arguments.to_string(),
+            };
+
+            playbook_engine::engine_run(input_params);
         }
         Some(("build", sub_matches)) => {
             println!(

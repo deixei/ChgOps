@@ -21,15 +21,27 @@ struct Playbook {
     tasks: Vec<Task>,
 }
 
-pub fn engine_run(name: String, template: String) {
+
+#[derive(Debug, Deserialize)]
+pub struct EngineParameters {
+    pub playbook_name: String,
+    pub workspace_path: String,
+    pub verbose: String,
+    pub arguments: String,
     
-    let playbook_yaml = fs::read_to_string(name)
+}
+
+pub fn engine_run(params: EngineParameters) {
+
+    let playbook_full_path = format!("{}/{}.yaml", params.workspace_path, params.playbook_name);
+
+    let playbook_yaml = fs::read_to_string(playbook_full_path)
         .expect("Failed to read playbook");
 
     let playbook: Playbook = serde_yaml::from_str(&playbook_yaml)
         .expect("Failed to parse playbook");
 
-    println!("Playbook name: {}, using template: {}", playbook.name, template);
+    println!("Playbook name: {}", playbook.name);
 
     println!("Settings name: {}", playbook.settings.name);
 
