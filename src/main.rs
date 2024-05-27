@@ -1,6 +1,5 @@
 use clap::{Command, Arg};
-
-
+pub mod collections;
 pub mod playbook_engine; // Add this import statement
 use playbook_engine::{ EngineParameters };
 

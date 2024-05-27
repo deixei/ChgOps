@@ -1,8 +1,8 @@
 use serde::Deserialize;
-use std::process::Command;
 use std::fs;
 use serde_yaml;
 use std::env;
+use crate::collections::dx::core::shell::Bash;
 
 
 #[derive(Debug, Deserialize)]
@@ -59,20 +59,9 @@ pub fn engine_run(params: EngineParameters) {
 
     for task in playbook.tasks {
         println!("Running task: {}", task.name);
-        let output = Command::new("sh")
-            .arg("-c")
-            .arg(&task.command)
-            .output()
-            .expect("Failed to execute command");
+        let bash = Bash::new(&task.command);
+        let output = bash.execute().expect("Failed to execute command");
+        bash.display(output);
 
-        if !output.status.success() {
-            eprintln!("Task '{}' failed with exit code: {}", task.name, output.status);
-            break;
-        }
-        else {
-            let output_str = String::from_utf8_lossy(&output.stdout);
-            let output_str = output_str.replace("\\n", "\n");
-            println!("Output: {}", output_str);
-        }
     }
 }

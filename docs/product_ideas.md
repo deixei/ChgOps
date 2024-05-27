@@ -98,9 +98,11 @@ main.rs
 ### dependencies
 
 Serge for yaml
-clap for CLI parsing
+clap for CLI parsing: https://rust-cli.github.io/book/index.html
 
 https://azure.github.io/azure-sdk/rust_introduction.html
 
 Jinja2: https://docs.rs/minijinja/latest/minijinja/
 Tera for templating: https://docs.rs/tera/latest/tera/
+
+
