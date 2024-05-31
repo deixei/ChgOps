@@ -2,9 +2,14 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use serde_yaml;
 use std::env;
-use crate::collections::dx::core::shell::Bash;
-use crate::collections::dx::core::shell::WinCmd;
-use crate::collections::dx::core::shell::ShellTrait;
+
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+enum PlaybookTasks {
+    CoreTasks(crate::collections::dx::core::tasks::Tasks),
+    AzureTasks(crate::collections::dx::azure::tasks::Tasks),
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(untagged)]
@@ -27,16 +32,16 @@ enum Task {
         login: serde_yaml::Value,
         register: Option<String>,
     },
-    CliTask {
+    AzureCliTask {
         name: String,
         #[serde(rename = "dx.azure.cli")]
-        az_cli: AzCli,
+        task: AzCliParameters,
         register: Option<String>,
     },
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-struct AzCli {
+struct AzCliParameters {
     cmd: String,
 }
 
@@ -49,7 +54,7 @@ struct Settings {
 struct Playbook {
     name: String,
     settings: Settings,
-    tasks: Vec<Task>,
+    tasks: Vec<PlaybookTasks>,
 }
 
 
@@ -87,29 +92,7 @@ pub fn engine_run(params: EngineParameters) {
     println!("Settings name: {}", playbook.settings.name);
 
     for task in playbook.tasks {
-        match task {
-            Task::BashCommandTask { name, command, .. } => {
-                println!("Running task: {}", name);
-                let bash = Bash::new(&command);
-                let output = bash.execute().expect("Failed to execute command");
-                bash.display(output);
-            }
-            Task::AzureLoginTask { name, .. } => {
-                println!("Running task: {}", name);
-                // Handle the LoginTask variant here
-            }
-            Task::CliTask { name, az_cli, .. } => {
-                println!("Running task: {}", name);
-                let bash = Bash::new(&az_cli.cmd);
-                let output = bash.execute().expect("Failed to execute command");
-                bash.display(output);
-            }
-            Task::WinCmdCommandTask { name, command, .. } => {
-                println!("Running task: {}", name);
-                let wincmd = WinCmd::new(&command);
-                let output = wincmd.execute().expect("Failed to execute command");
-                wincmd.display(output);
-            }
-        }
+        crate::collections::dx::core::tasks::execute(task);
+        crate::collections::dx::azure::tasks::execute(task);
     }
 }

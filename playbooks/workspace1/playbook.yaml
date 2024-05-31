@@ -17,6 +17,9 @@ tasks:
     dx.core.bash: "ls -l"
   - name: Login to Azure
     dx.azure.login:
+      auth:
+        client_id: "{{ env('AZURE_CLIENT_ID', '') }}"
+      
     register: azure_login
   - name: Test az account list
     dx.azure.cli:

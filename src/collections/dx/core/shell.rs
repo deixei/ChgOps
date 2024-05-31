@@ -1,7 +1,7 @@
 // class that represents a command line call to the sh shell
 
-const BASH_COMMAND: &str = "sh";
-const CMD_COMMAND: &str = "cmd";
+pub const BASH_COMMAND: &str = "sh";
+pub const CMD_COMMAND: &str = "cmd";
 
 use std::process::{Command, Output};
 pub trait ShellTrait {
