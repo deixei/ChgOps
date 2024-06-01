@@ -1,7 +1,7 @@
 use clap::{Command, Arg};
 pub mod collections;
-pub mod playbook_engine; // Add this import statement
-use playbook_engine::{ EngineParameters };
+pub mod playbook_engine;
+use crate::collections::dx::EngineParameters;
 
 
 
@@ -97,6 +97,8 @@ fn cli() -> Command {
 fn main() {
     let matches: clap::ArgMatches = cli().get_matches();
 
+    println!("ChgOps -----------------------------------------");
+
     match matches.subcommand() {
         Some(("init", sub_matches)) => {
             let name = sub_matches.get_one::<String>("name").expect("required");
@@ -114,7 +116,7 @@ fn main() {
             let workspace_path = sub_matches.get_one::<String>("path").expect("required");
             let verbose = sub_matches.get_one::<String>("verbose").expect("required");
             let arguments = sub_matches.get_one::<String>("arguments").expect("required");
-
+            
             println!(
                 "Running playbook: {}, verbose: {}, arguments: {}",
                 playbook_name,
@@ -122,7 +124,7 @@ fn main() {
                 arguments
             );
 
-            let input_params: EngineParameters = playbook_engine::EngineParameters {
+            let input_params: EngineParameters = EngineParameters {
                 playbook_name: playbook_name.to_string(),
                 workspace_path: workspace_path.to_string(),
                 verbose: verbose.to_string(),

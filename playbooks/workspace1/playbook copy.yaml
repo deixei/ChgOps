@@ -1,0 +1,33 @@
+#!chgops
+# Description: This is a simple playbook that runs two commands on the local host.
+---
+name: demo-playbook
+change_id: 0
+settings:
+  name: "Run commands on the local host"
+  vars:
+    PAT: "{{ env('PAT', '') }}"
+    ansible_connection: "local"
+    ansible_python_interpreter: "/usr/bin/python3"
+  
+tasks:
+  - name: "Print working directory"
+    dx.core.bash: "pwd"
+  - name: "List files"
+    dx.core.bash: "ls -l"
+  - dx.azure.login:
+      name: Login to Azure
+      auth:
+        client_id: "{{ env('AZURE_CLIENT_ID', '') }}"
+      
+    register: azure_login
+  - name: Test az account list
+    dx.azure.cli:
+      cmd: "account list"
+    register: az_account_list
+
+
+  - block:
+      - name: "Print the output of the az account list command"
+        dx.core.bash: "echo '{{ az_account_list.stdout }}'"
+    when: azure_login is defined

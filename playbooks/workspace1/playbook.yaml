@@ -11,17 +11,14 @@ settings:
     ansible_python_interpreter: "/usr/bin/python3"
   
 tasks:
-  - name: "Print working directory"
-    dx.core.bash: "pwd"
-  - name: "List files"
-    dx.core.bash: "ls -l"
-  - name: Login to Azure
-    dx.azure.login:
-      auth:
-        client_id: "{{ env('AZURE_CLIENT_ID', '') }}"
-      
-    register: azure_login
-  - name: Test az account list
-    dx.azure.cli:
-      cmd: "account list"
-    register: az_account_list    
+  - dx.azure.login:
+      command: task
+      name: "this is a demo"
+    
+  - dx.azure.cli:
+      command: task
+      name: "another demo"
+  
+  - dx.core.bash:
+      command: ls -al
+      name: "yet another demo"
