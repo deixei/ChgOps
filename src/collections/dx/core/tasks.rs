@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 use crate::collections::dx::core::shell::Bash;
 use crate::collections::dx::core::shell::WinCmd;
 use crate::collections::dx::core::shell::ShellTrait;
-use crate::collections::dx::{PlaybookCommand, PlaybookCommandTrait, PlaybookCommandOutput, OkPlaybookCommandOutput, ErrPlaybookCommandOutput};
-
+use crate::collections::dx::{PlaybookCommand, PlaybookCommandTrait, PlaybookCommandOutput};
+use crate::collections::dx::Playbook;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum CoreTasks {
@@ -26,82 +26,77 @@ pub struct WinCmdCommandVars {
 
 pub type BashCommandTask = PlaybookCommand<BashCommandVars>;
 impl PlaybookCommandTrait for BashCommandTask {
-    fn execute(&self) -> Result<OkPlaybookCommandOutput, ErrPlaybookCommandOutput> {
+    fn execute(&mut self, playbook: &mut Playbook) {
 
         println!("BashCommandTask -- Running task: {:?}", self.command);
         let bash = Bash::new(&self.command);
         let output = bash.execute().expect("Failed to execute command");
 
-        let stdout:String = String::from_utf8_lossy(&output.stdout).to_string();
-        let stderr:String = String::from_utf8_lossy(&output.stderr).to_string();
+        self.output = PlaybookCommandOutput::new();
 
-        let output_result = PlaybookCommandOutput {
-            stdout: stdout,
-            stderr: stderr,
-            message: "Success".to_string(),
-            status: 0,
-            success: 1,
-            failed: 0,
-            skipped: 0,
-            changed: 0,
-        };
-        
-        Ok(output_result)
+        self.output.stdout = String::from_utf8_lossy(&output.stdout).to_string();
+        self.output.stderr = String::from_utf8_lossy(&output.stderr).to_string();  
+        self.output.message = "Success".to_string();
+        self.output.status = 1;
+        self.output.success = 1;
+        self.output.failed = 0;
+        self.output.skipped = 0;
+        self.output.changed = 0;
+
+
     }
 
-    fn display(&self, output: PlaybookCommandOutput) {
+    fn display(&self) {
         println!("AzureCliTask");
         println!("\tSelf: {:?}", self);
         println!("\tCommand: {}", self.command);
         println!("\tName: {}", self.name.as_ref().unwrap_or(&"No name".to_string()));        
-        println!("\tOutput: {:?}", output);
+        println!("\tOutput: {:?}", self. output);
     }
 }
 
 pub type WinCmdCommandTask = PlaybookCommand<WinCmdCommandVars>;
 impl PlaybookCommandTrait for WinCmdCommandTask {
-    fn execute(&self) -> Result<OkPlaybookCommandOutput, ErrPlaybookCommandOutput> {
+    fn execute(&mut self, playbook: &mut Playbook) {
+
         println!("WinCmdCommandTask -- Running task: {:?}", self.command);
         let wincmd = WinCmd::new(&self.command);
         let output = wincmd.execute().expect("Failed to execute command");
-        let stdout:String = String::from_utf8_lossy(&output.stdout).to_string();
-        let stderr:String = String::from_utf8_lossy(&output.stderr).to_string();
 
-        let output_result = PlaybookCommandOutput {
-            stdout: stdout,
-            stderr: stderr,
-            message: "Success".to_string(),
-            status: 0,
-            success: 1,
-            failed: 0,
-            skipped: 0,
-            changed: 0,
-        };
-        
-        Ok(output_result)
+        self.output = PlaybookCommandOutput::new();
+
+        self.output.stdout = String::from_utf8_lossy(&output.stdout).to_string();
+        self.output.stderr = String::from_utf8_lossy(&output.stderr).to_string();  
+        self.output.message = "Success".to_string();
+        self.output.status = 1;
+        self.output.success = 1;
+        self.output.failed = 0;
+        self.output.skipped = 0;
+        self.output.changed = 0;
+
     }
     
-    fn display(&self, output: PlaybookCommandOutput) {
+    fn display(&self) {
         println!("AzureCliTask");
         println!("\tSelf: {:?}", self);
         println!("\tCommand: {}", self.command);
         println!("\tName: {}", self.name.as_ref().unwrap_or(&"No name".to_string()));        
-        println!("\tOutput: {:?}", output);        
+        println!("\tOutput: {:?}", self.output);        
     }
 }
 
 impl PlaybookCommandTrait for CoreTasks {
-    fn execute(&self) -> Result<OkPlaybookCommandOutput, ErrPlaybookCommandOutput> {
+    fn execute(&mut self, playbook: &mut Playbook) {
         match self {
-            CoreTasks::BashCommandTask(task) => task.execute(),
-            CoreTasks::WinCmdCommandTask(task) => task.execute(),
+            CoreTasks::BashCommandTask(task) => task.execute(playbook),
+            CoreTasks::WinCmdCommandTask(task) => task.execute(playbook),
         }
     }
 
-    fn display(&self, output: PlaybookCommandOutput) {
+    fn display(&self) {
         match self {
-            CoreTasks::BashCommandTask(task) => task.display(output),
-            CoreTasks::WinCmdCommandTask(task) => task.display(output),
+            CoreTasks::BashCommandTask(task) => task.display(),
+            CoreTasks::WinCmdCommandTask(task) => task.display(),
         }
     }
 }
