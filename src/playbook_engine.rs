@@ -29,7 +29,11 @@ pub fn engine_run(params: EngineParameters) {
 
     playbook.display();
 
+    playbook.start_play();
+
     playbook.run_tasks();
+
+    playbook.end_play();
 
     playbook.display_summary();
 

@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 pub mod core;
 pub mod azure;
+use chrono::{DateTime, Utc};
+use chrono_humanize::HumanTime;
 
 #[derive(Debug, Deserialize, Default, Serialize)]
 pub struct PlaybookSummary {
@@ -9,6 +11,9 @@ pub struct PlaybookSummary {
     pub failed_counter: i32,
     pub skipped_counter: i32,
     pub changed_counter: i32,
+
+    pub start_time: Option<DateTime<Utc>>,
+    pub end_time: Option<DateTime<Utc>>,
 }
 
 impl PlaybookSummary {
@@ -19,6 +24,8 @@ impl PlaybookSummary {
             failed_counter: 0,
             skipped_counter: 0,
             changed_counter: 0,
+            start_time: None,
+            end_time: None,
         }
     }
 
@@ -50,13 +57,36 @@ impl PlaybookSummary {
         self.increment_changed(output.changed);
     }
 
+    pub fn set_start_time(&mut self) {
+        self.start_time = Some(Utc::now());
+    }
+
+    pub fn set_end_time(&mut self) {
+        self.end_time = Some(Utc::now());
+    }
+
+    pub fn duration(&self) -> String {
+        let duration1 = self.end_time.unwrap().signed_duration_since(self.start_time.unwrap());
+        // set duration to a humam readable format
+        let duration = HumanTime::from(duration1);
+
+        duration.to_string()
+    }
+
     pub fn display(&self) {
         println!("####### Playbook execution summary ##########");
-        println!("Summary\n\texecuted: {}", self.tasks_counter);
-        println!("\tsuccess : {}", self.success_counter);
-        println!("\tfailed  : {}", self.failed_counter);
-        println!("\tskipped : {}", self.skipped_counter);
+        print!("Summary:\n\texecuted: {}", self.tasks_counter);
+        print!("\tsuccess : {}", self.success_counter);
+        print!("\tfailed  : {}", self.failed_counter);
+        print!("\tskipped : {}", self.skipped_counter);
         println!("\tchanged : {}", self.changed_counter);
+        
+        let start_time_formatted = self.start_time.unwrap().format("%Y-%m-%d %H:%M:%S").to_string();
+        let end_time_formatted = self.end_time.unwrap().format("%Y-%m-%d %H:%M:%S").to_string();
+
+        print!("\tstart   : {:?}", start_time_formatted);
+        print!("\tend     : {:?}", end_time_formatted);
+        println!("\tduration: {:?}", self.duration());
         println!("#############################################");        
     }
 }
@@ -70,6 +100,7 @@ pub struct Settings {
 pub struct Playbook {
     pub name: String,
     pub settings: Settings,
+
     pub tasks: Vec<PlaybookTasks>,
 
     #[serde(skip_deserializing)]
@@ -106,31 +137,25 @@ impl Playbook {
         self.summary.display();
     }
 
-    pub fn start_task(&mut self) {
-        println!("Starting task");
+    pub fn start_play(&mut self) {
+        self.summary.set_start_time();
     }
 
     pub fn run_tasks(&mut self) {
+
         for task in self.tasks.iter_mut() {
-            match task {
-                PlaybookTasks::CoreTasks(task) => {
-                    println!("*************** Core Task ***************");
-                    task.execute(self);
-                    task.display();
-                    println!("************************************");
-                },
-                PlaybookTasks::AzureTasks(task) => {
-                    println!("*************** Azure Task ***************");
-                    task.execute(self);
-                    task.display();
-                    println!("************************************");
-                },
-            }
+            task.execute();
+            task.display();
         }
+
     }
 
-    pub fn end_task(&mut self, output: PlaybookCommandOutput) {
-        self.summary.increment_as_task(output);
+    pub fn end_play(&mut self) {
+        self.summary.set_end_time();
+        for task in self.tasks.iter() {
+            let output = task.output();
+            self.summary.increment_as_task(output);
+        }
     }
 
 }
@@ -164,7 +189,7 @@ impl EngineParameters {
     }
 }
 
-#[derive(Debug, Deserialize, Default, Serialize)]
+#[derive(Debug, Deserialize, Default, Serialize, Clone)]
 pub struct PlaybookCommandOutput {
     pub stdout: String,
     pub stderr: String,
@@ -174,6 +199,9 @@ pub struct PlaybookCommandOutput {
     pub failed: i32,
     pub skipped: i32,
     pub changed: i32,
+
+    pub start_time: Option<DateTime<Utc>>,
+    pub end_time: Option<DateTime<Utc>>,
 }
 
 impl PlaybookCommandOutput {
@@ -187,13 +215,51 @@ impl PlaybookCommandOutput {
             failed: 0,
             skipped: 0,
             changed: 0,
+            start_time: None,
+            end_time: None,
         }
+    }
+
+    pub fn set_start_time(&mut self) {
+        self.start_time = Some(Utc::now());
+    }
+
+    pub fn set_end_time(&mut self) {
+        self.end_time = Some(Utc::now());
+    }
+
+    pub fn display(&self) {
+        println!("####### Playbook Command Output ##########");
+        println!("\tstdout: {:?}", self.stdout);
+        println!("\tstderr: {:?}", self.stderr);
+        println!("\tmessage: {:?}", self.message);
+        println!("\tstatus: {:?}", self.status);
+        println!("\tsuccess: {:?}", self.success);
+        println!("\tfailed: {:?}", self.failed);
+        println!("\tskipped: {:?}", self.skipped);
+        println!("\tchanged: {:?}", self.changed);
+
+        let start_time_formatted = self.start_time.unwrap().format("%Y-%m-%d %H:%M:%S").to_string();
+        let end_time_formatted = self.end_time.unwrap().format("%Y-%m-%d %H:%M:%S").to_string();
+
+        print!("\tstart   : {:?}", start_time_formatted);
+        print!("\tend     : {:?}", end_time_formatted);
+        println!("\tduration: {:?}", self.duration());
+        println!("#############################################");        
+    }
+    pub fn duration(&self) -> String {
+        let duration1 = self.end_time.unwrap().signed_duration_since(self.start_time.unwrap());
+        // set duration to a humam readable format
+        let duration = HumanTime::from(duration1);
+
+        duration.to_string()
     }
 }
 
 pub trait PlaybookCommandTrait {
-    fn execute(&mut self, playbook: &mut Playbook);
+    fn execute(&mut self);
     fn display(&self);
+    fn output(&self) -> PlaybookCommandOutput;
 }
 
 #[derive(Debug, Deserialize, Serialize, Default)]
@@ -207,6 +273,9 @@ pub struct PlaybookCommand<T> {
 
     #[serde(skip_deserializing)]
     pub output: PlaybookCommandOutput,
+
+    #[serde(skip_deserializing)]
+    pub parent: Playbook,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -214,4 +283,28 @@ pub struct PlaybookCommand<T> {
 pub enum PlaybookTasks {
     CoreTasks(crate::collections::dx::core::tasks::CoreTasks),
     AzureTasks(crate::collections::dx::azure::tasks::AzureTasks),
+}
+
+
+impl PlaybookCommandTrait for PlaybookTasks {
+    fn execute(&mut self) {
+        match self {
+            PlaybookTasks::CoreTasks(task) => task.execute(),
+            PlaybookTasks::AzureTasks(task) => task.execute(),
+        }
+    }
+
+    fn display(&self) {
+        match self {
+            PlaybookTasks::CoreTasks(task) => task.display(),
+            PlaybookTasks::AzureTasks(task) => task.display(),
+        }
+    }
+
+    fn output(&self) -> PlaybookCommandOutput {
+        match self {
+            PlaybookTasks::CoreTasks(task) => task.output(),
+            PlaybookTasks::AzureTasks(task) => task.output(),
+        }
+    }
 }

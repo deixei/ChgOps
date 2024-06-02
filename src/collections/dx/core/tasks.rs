@@ -3,7 +3,7 @@ use crate::collections::dx::core::shell::Bash;
 use crate::collections::dx::core::shell::WinCmd;
 use crate::collections::dx::core::shell::ShellTrait;
 use crate::collections::dx::{PlaybookCommand, PlaybookCommandTrait, PlaybookCommandOutput};
-use crate::collections::dx::Playbook;
+
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum CoreTasks {
@@ -25,14 +25,15 @@ pub struct WinCmdCommandVars {
 }
 
 pub type BashCommandTask = PlaybookCommand<BashCommandVars>;
-impl PlaybookCommandTrait for BashCommandTask {
-    fn execute(&mut self, playbook: &mut Playbook) {
 
-        println!("BashCommandTask -- Running task: {:?}", self.command);
+impl PlaybookCommandTrait for BashCommandTask {
+    fn execute(&mut self) {
+        self.output = PlaybookCommandOutput::new();
+        self.output.set_start_time();
+                
         let bash = Bash::new(&self.command);
         let output = bash.execute().expect("Failed to execute command");
 
-        self.output = PlaybookCommandOutput::new();
 
         self.output.stdout = String::from_utf8_lossy(&output.stdout).to_string();
         self.output.stderr = String::from_utf8_lossy(&output.stderr).to_string();  
@@ -43,27 +44,31 @@ impl PlaybookCommandTrait for BashCommandTask {
         self.output.skipped = 0;
         self.output.changed = 0;
 
-
+        self.output.set_end_time();
     }
 
     fn display(&self) {
-        println!("AzureCliTask");
+        println!("Bash Command Task");
         println!("\tSelf: {:?}", self);
         println!("\tCommand: {}", self.command);
         println!("\tName: {}", self.name.as_ref().unwrap_or(&"No name".to_string()));        
         println!("\tOutput: {:?}", self. output);
     }
+
+    fn output(&self) -> PlaybookCommandOutput {
+        self.output.clone()
+    }
 }
 
 pub type WinCmdCommandTask = PlaybookCommand<WinCmdCommandVars>;
 impl PlaybookCommandTrait for WinCmdCommandTask {
-    fn execute(&mut self, playbook: &mut Playbook) {
+    fn execute(&mut self) {
+        self.output = PlaybookCommandOutput::new();
+        self.output.set_start_time();
 
-        println!("WinCmdCommandTask -- Running task: {:?}", self.command);
         let wincmd = WinCmd::new(&self.command);
         let output = wincmd.execute().expect("Failed to execute command");
 
-        self.output = PlaybookCommandOutput::new();
 
         self.output.stdout = String::from_utf8_lossy(&output.stdout).to_string();
         self.output.stderr = String::from_utf8_lossy(&output.stderr).to_string();  
@@ -74,22 +79,27 @@ impl PlaybookCommandTrait for WinCmdCommandTask {
         self.output.skipped = 0;
         self.output.changed = 0;
 
+        self.output.set_end_time();
     }
     
     fn display(&self) {
-        println!("AzureCliTask");
+        println!("Win Cmd Command Task");
         println!("\tSelf: {:?}", self);
         println!("\tCommand: {}", self.command);
         println!("\tName: {}", self.name.as_ref().unwrap_or(&"No name".to_string()));        
         println!("\tOutput: {:?}", self.output);        
     }
+
+    fn output(&self) -> PlaybookCommandOutput {
+        self.output.clone()
+    }
 }
 
 impl PlaybookCommandTrait for CoreTasks {
-    fn execute(&mut self, playbook: &mut Playbook) {
+    fn execute(&mut self) {
         match self {
-            CoreTasks::BashCommandTask(task) => task.execute(playbook),
-            CoreTasks::WinCmdCommandTask(task) => task.execute(playbook),
+            CoreTasks::BashCommandTask(task) => task.execute(),
+            CoreTasks::WinCmdCommandTask(task) => task.execute(),
         }
     }
 
@@ -97,6 +107,13 @@ impl PlaybookCommandTrait for CoreTasks {
         match self {
             CoreTasks::BashCommandTask(task) => task.display(),
             CoreTasks::WinCmdCommandTask(task) => task.display(),
+        }
+    }
+
+    fn output(&self) -> PlaybookCommandOutput {
+        match self {
+            CoreTasks::BashCommandTask(task) => task.output(),
+            CoreTasks::WinCmdCommandTask(task) => task.output(),
         }
     }
 }
