@@ -3,6 +3,84 @@ pub mod core;
 pub mod azure;
 use chrono::{DateTime, Utc};
 use chrono_humanize::HumanTime;
+use std::sync::Mutex;
+use lazy_static::lazy_static;
+use std::env;
+use serde_yaml;
+
+#[derive(Debug, Deserialize, Default, Serialize)]
+pub struct ChgOpsWorkspace {
+    pub current_dir: String,
+    pub workspace_path: String,
+    pub engine_parameters: EngineParameters,
+
+    pub playbook: Playbook,
+
+    pub summary: PlaybookSummary,
+
+}
+
+impl ChgOpsWorkspace {
+
+    pub fn new() -> ChgOpsWorkspace {
+        let current_dir = env::current_dir().unwrap().to_str().unwrap().to_owned();
+        ChgOpsWorkspace {
+            current_dir: current_dir,
+            workspace_path: "".to_string(),
+            engine_parameters: EngineParameters::new(
+                "".to_string(), 
+                "".to_string(), 
+                "".to_string(), 
+                "".to_string()),
+            playbook: Playbook::new("",
+                Settings::default(),
+                vec![]),
+            summary: PlaybookSummary::new(),
+        }
+    }
+
+    pub fn set_workspace_path(&mut self, workspace_path: &str) {
+        self.workspace_path = workspace_path.to_string();
+    }
+
+    pub fn load_workspace(&mut self) {
+        let playbook_yaml = std::fs::read_to_string(&self.engine_parameters.playbook_full_path)
+            .expect("Failed to read playbook");
+        
+        self.playbook = serde_yaml::from_str(&playbook_yaml)
+            .expect("Failed to parse playbook");
+    }
+
+    pub fn run_playbook(&mut self) {
+        self.start_banner();
+        self.playbook.start_play();
+        self.playbook.run_tasks();
+        self.playbook.end_play();
+        self.end_banner();
+    }
+
+    pub fn start_banner(&self) {
+        println!("ChgOps - Change management and operations tool");
+        self.playbook.display();
+    }
+
+    pub fn end_banner(&self) {
+        self.playbook.display_summary();
+        println!("ChgOps - End of execution");
+    }
+
+    pub fn display(&self) {
+        println!("Workspace Facts ###########################");
+        println!("\tWorkspace Path: {}", self.workspace_path);
+        println!("#############################################");
+    }
+}
+
+lazy_static! {
+    pub static ref WORKSPACE: Mutex<ChgOpsWorkspace> = Mutex::new(ChgOpsWorkspace::new());
+}
+
+
 
 #[derive(Debug, Deserialize, Default, Serialize)]
 pub struct PlaybookSummary {
@@ -102,9 +180,6 @@ pub struct Playbook {
     pub settings: Settings,
 
     pub tasks: Vec<PlaybookTasks>,
-
-    #[serde(skip_deserializing)]
-    engine_parameters: EngineParameters,
     
     #[serde(skip_deserializing)]
     summary: PlaybookSummary,
@@ -116,20 +191,14 @@ impl Playbook {
             name: name.to_string(),
             settings: settings,
             tasks: tasks,
-            engine_parameters: EngineParameters::new("", "", "", ""),
             summary: PlaybookSummary::new(),
         }
-    }
-
-    pub fn set_engine_parameters(&mut self, engine_parameters: EngineParameters) {
-        self.engine_parameters = engine_parameters;
     }
 
     pub fn display(&self) {
         println!("Playbook: {} #####################################", self.name);
         println!("\tSettings: {:?}", self.settings);
         println!("\tTasks: {:?}", self.tasks);
-        self.engine_parameters.display();
         println!("#############################################");
     }
 
@@ -160,21 +229,36 @@ impl Playbook {
 
 }
 
-#[derive(Debug, Deserialize, Default, Serialize)]
+#[derive(Debug, Deserialize, Default, Serialize, Clone)]
 pub struct EngineParameters {
     pub playbook_name: String,
     pub workspace_path: String,
     pub verbose: String,
     pub arguments: String,
+
+    pub current_dir: String,
+    pub playbook_full_path: String,
 }
 
 impl EngineParameters {
-    pub fn new(playbook_name: &str, workspace_path: &str, verbose: &str, arguments: &str) -> EngineParameters {
+    pub fn new(playbook_name: String, workspace_path: String, verbose: String, arguments: String) -> EngineParameters {
+        let current_dir = env::current_dir().unwrap().to_str().unwrap().to_owned();
+        
+        let workspace_path = if workspace_path.is_empty() {
+            current_dir.to_string()
+        } else {
+            workspace_path.to_string()
+        };
+
+        let playbook_full_path = format!("{}/{}.yaml", workspace_path, playbook_name);
+    
         EngineParameters {
-            playbook_name: playbook_name.to_string(),
-            workspace_path: workspace_path.to_string(),
-            verbose: verbose.to_string(),
-            arguments: arguments.to_string(),
+            playbook_name: playbook_name,
+            workspace_path: workspace_path,
+            verbose: verbose,
+            arguments: arguments,
+            current_dir: current_dir.to_string(),
+            playbook_full_path: playbook_full_path.to_string(),
         }
     }
 
@@ -185,6 +269,8 @@ impl EngineParameters {
         println!("\tWorkspace Path: {}", self.workspace_path);
         println!("\tVerbose: {}", self.verbose);
         println!("\tArguments: {}", self.arguments);
+        println!("\tCurrent Dir: {}", self.current_dir);
+        println!("\tPlaybook Full Path: {}", self.playbook_full_path);
         println!("#############################################");
     }
 }

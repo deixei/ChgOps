@@ -1,10 +1,7 @@
 use clap::{Command, Arg};
 pub mod collections;
-pub mod playbook_engine;
 use crate::collections::dx::EngineParameters;
-
-
-
+use crate::collections::dx::WORKSPACE;
 
 fn cli() -> Command {
 
@@ -123,15 +120,19 @@ fn main() {
                 verbose,
                 arguments
             );
+            {
+                let mut workspace = WORKSPACE.lock().unwrap();
 
-            let input_params: EngineParameters = EngineParameters {
-                playbook_name: playbook_name.to_string(),
-                workspace_path: workspace_path.to_string(),
-                verbose: verbose.to_string(),
-                arguments: arguments.to_string(),
-            };
+                workspace.engine_parameters = EngineParameters::new(
+                    playbook_name.to_string(),
+                    workspace_path.to_string(),
+                    verbose.to_string(),
+                    arguments.to_string()
+                );
+                workspace.load_workspace();
 
-            playbook_engine::engine_run(input_params);
+                workspace.run_playbook();
+            }
         }
         Some(("build", sub_matches)) => {
             println!(
