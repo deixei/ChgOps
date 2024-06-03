@@ -106,3 +106,8 @@ Jinja2: https://docs.rs/minijinja/latest/minijinja/
 Tera for templating: https://docs.rs/tera/latest/tera/
 
 
+
+
+## research
+
+see the use of YAML 1.2 basedon https://github.com/Ethiraric/yaml-rust2
