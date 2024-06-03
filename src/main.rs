@@ -122,13 +122,11 @@ fn main() {
             );
             {
                 let mut workspace = WORKSPACE.lock().unwrap();
+                workspace.playbook_name = playbook_name.to_string();
+                workspace.workspace_path = workspace_path.to_string();
+                workspace.verbose = verbose.to_string();
+                workspace.arguments = arguments.to_string();
 
-                workspace.engine_parameters = EngineParameters::new(
-                    playbook_name.to_string(),
-                    workspace_path.to_string(),
-                    verbose.to_string(),
-                    arguments.to_string()
-                );
                 workspace.load_workspace();
 
                 workspace.run_playbook();

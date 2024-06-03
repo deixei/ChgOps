@@ -18,10 +18,9 @@ pub struct ChgOpsWorkspace {
     pub verbose: String,
     pub arguments: String,
 
-    pub engine_parameters: EngineParameters,
-
     pub playbook: Playbook,
-
+    pub configurations: WorkspaceConfigurations,
+    pub variables: WorkspaceVariables,
     pub summary: PlaybookSummary,
 
 }
@@ -32,50 +31,56 @@ impl ChgOpsWorkspace {
         let current_dir = env::current_dir().unwrap().to_str().unwrap().to_owned();
         ChgOpsWorkspace {
             current_dir: current_dir,
-            workspace_path: "".to_string(),
-            engine_parameters: EngineParameters::new(
-                "".to_string(), 
-                "".to_string(), 
-                "".to_string(), 
-                "".to_string()),
+            workspace_path: current_dir,
+            verbose: "".to_string(),
+            arguments: "".to_string(),
+
             playbook: Playbook::new("",
                 Settings::default(),
                 vec![]),
+            configurations: WorkspaceConfigurations::new(),
+            variables: WorkspaceVariables::new(),
             summary: PlaybookSummary::new(),
         }
     }
 
+    pub fn workspace_path(&mut self) -> String {
+        let workspace_path = if workspace_path.is_empty() {
+            current_dir.to_string()
+        } else {
+            workspace_path.to_string()
+        };
+
+        workspace_path
+    }
+
     pub fn playbook_full_path(&mut self) -> String {
-        format!("{}/{}.yaml", &self.workspace_path, &self.playbook_name)
+        format!("{}/{}.yaml", &self.workspace_path(), &self.playbook_name)
     }
 
     pub fn vars_full_path(&mut self) -> String {
-        format!("{}/vars.yaml", &self.workspace_path)
+        format!("{}/vars.yaml", &self.workspace_path())
     }
 
     pub fn config_full_path(&mut self) -> String {
-        format!("{}/config.yaml", &self.workspace_path)
-    }
-
-    pub fn set_workspace_path(&mut self, workspace_path: &str) {
-        self.workspace_path = workspace_path.to_string();
+        format!("{}/config.yaml", &self.workspace_path())
     }
 
     pub fn load_workspace(&mut self) {
-        let playbook_yaml = std::fs::read_to_string(&self.playbook_full_path())
-            .expect("Failed to read playbook");
-
-        // check if file exist before loading
-        let vars_yaml = std::fs::read_to_string(&self.vars_full_path())
-            .expect("Failed to read vars.yaml");
-
         let config_yaml = std::fs::read_to_string(&self.config_full_path())
             .expect("Failed to read config.yaml");
-
+        self.configurations = serde_yaml::from_str(&config_yaml)
+            .expect("Failed to parse playbook");
+        
+        let vars_yaml = std::fs::read_to_string(&self.vars_full_path())
+            .expect("Failed to read vars.yaml");
+        self.variables = serde_yaml::from_str(&vars_yaml)
+            .expect("Failed to parse playbook");
+            
+        let playbook_yaml = std::fs::read_to_string(&self.playbook_full_path())
+            .expect("Failed to read playbook");
         self.playbook = serde_yaml::from_str(&playbook_yaml)
             .expect("Failed to parse playbook");
-
-            
     }
 
     pub fn run_playbook(&mut self) {
@@ -88,6 +93,19 @@ impl ChgOpsWorkspace {
 
     pub fn start_banner(&self) {
         println!("ChgOps - Change management and operations tool");
+
+        println!("Engine Parameters ###########################");
+
+        println!("\tPlaybook Name: {}", self.playbook_name);
+        println!("\tWorkspace Path: {}", self.workspace_path());
+        println!("\tVerbose: {}", self.verbose);
+        println!("\tArguments: {}", self.arguments);
+        println!("\tCurrent Dir: {}", self.current_dir);
+        println!("\tPlaybook Full Path: {}", self.playbook_full_path());
+        println!("\tConfigurations Full Path: {}", self.config_full_path());
+        println!("\tVariables Full Path: {}", self.vars_full_path());
+        println!("#############################################");
+
         self.playbook.display();
     }
 
@@ -98,7 +116,7 @@ impl ChgOpsWorkspace {
 
     pub fn display(&self) {
         println!("Workspace Facts ###########################");
-        println!("\tWorkspace Path: {}", self.workspace_path);
+        println!("\tWorkspace Path: {}", self.workspace_path());
         println!("#############################################");
     }
 }
@@ -195,6 +213,18 @@ impl PlaybookSummary {
         println!("#############################################");        
     }
 }
+
+#[derive(Debug, Deserialize, Default, Serialize)]
+pub struct WorkspaceConfigurations {
+    pub params: Option<String>
+}
+
+#[derive(Debug, Deserialize, Default, Serialize)]
+pub struct WorkspaceVariables {
+    pub params: Option<String>
+    pub vars: Option<String>
+}
+
 
 #[derive(Debug, Deserialize, Default, Serialize)]
 pub struct Settings {
