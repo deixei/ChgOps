@@ -12,6 +12,12 @@ use serde_yaml;
 pub struct ChgOpsWorkspace {
     pub current_dir: String,
     pub workspace_path: String,
+
+    // engine_parameters
+    pub playbook_name: String,
+    pub verbose: String,
+    pub arguments: String,
+
     pub engine_parameters: EngineParameters,
 
     pub playbook: Playbook,
@@ -39,16 +45,37 @@ impl ChgOpsWorkspace {
         }
     }
 
+    pub fn playbook_full_path(&mut self) -> String {
+        format!("{}/{}.yaml", &self.workspace_path, &self.playbook_name)
+    }
+
+    pub fn vars_full_path(&mut self) -> String {
+        format!("{}/vars.yaml", &self.workspace_path)
+    }
+
+    pub fn config_full_path(&mut self) -> String {
+        format!("{}/config.yaml", &self.workspace_path)
+    }
+
     pub fn set_workspace_path(&mut self, workspace_path: &str) {
         self.workspace_path = workspace_path.to_string();
     }
 
     pub fn load_workspace(&mut self) {
-        let playbook_yaml = std::fs::read_to_string(&self.engine_parameters.playbook_full_path)
+        let playbook_yaml = std::fs::read_to_string(&self.playbook_full_path())
             .expect("Failed to read playbook");
-        
+
+        // check if file exist before loading
+        let vars_yaml = std::fs::read_to_string(&self.vars_full_path())
+            .expect("Failed to read vars.yaml");
+
+        let config_yaml = std::fs::read_to_string(&self.config_full_path())
+            .expect("Failed to read config.yaml");
+
         self.playbook = serde_yaml::from_str(&playbook_yaml)
             .expect("Failed to parse playbook");
+
+            
     }
 
     pub fn run_playbook(&mut self) {
