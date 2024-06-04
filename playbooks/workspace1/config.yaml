@@ -5,3 +5,25 @@ dependencies:
   collections:
     - name: dx.azure
       version: 1.0.0
+
+test1: "{{ dependencies.source }}"
+
+
+definitions: 
+  steps:
+    - step: &build-test
+        name: Build and test
+        script:
+          - mvn package
+        artifacts:
+          - target/**
+
+pipelines:
+  branches:
+    develop:
+      - step: *build-test
+    master:
+      - step: 
+          <<: *build-test
+          name: Testing on Master #override
+          ongoing: false #extension

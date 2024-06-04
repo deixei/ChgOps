@@ -16,3 +16,4 @@ clap = "4.0"
 chrono = { version = "0.4", features = ["serde"] }
 chrono-humanize = "0.2.3"
 lazy_static = "1.4"
+yaml-rust2 = "0.8"

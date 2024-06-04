@@ -1,6 +1,5 @@
 use clap::{Command, Arg};
 pub mod collections;
-use crate::collections::dx::EngineParameters;
 use crate::collections::dx::WORKSPACE;
 
 fn cli() -> Command {
@@ -38,7 +37,7 @@ fn cli() -> Command {
                     .long("verbose")
                     .short('v')
                     .help("Sets the level of verbosity")
-                    .default_value("v")
+                    .default_value("")
                     .required(false))
                 .arg(Arg::new("arguments")
                     .long("arguments")

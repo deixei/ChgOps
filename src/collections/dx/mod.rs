@@ -7,8 +7,49 @@ use std::sync::Mutex;
 use lazy_static::lazy_static;
 use std::env;
 use serde_yaml;
+use std::collections::HashMap;
+use yaml_rust2::{YamlLoader, Yaml};
+use std::fs::File;
+use std::io::prelude::*;
 
-#[derive(Debug, Deserialize, Default, Serialize)]
+pub fn open_yaml(filename: &str) -> Vec<Yaml> {
+    let mut f = File::open(filename).unwrap();
+    let mut s = String::new();
+    f.read_to_string(&mut s).unwrap();
+
+    let docs = YamlLoader::load_from_str(&s).unwrap();
+
+    docs
+}
+
+pub fn print_indent(indent: usize) {
+    for _ in 0..indent {
+        print!("    ");
+    }
+}
+
+pub fn dump_yaml(doc: &Yaml, indent: usize) {
+    match *doc {
+        Yaml::Array(ref v) => {
+            for x in v {
+                dump_yaml(x, indent + 1);
+            }
+        }
+        Yaml::Hash(ref h) => {
+            for (k, v) in h {
+                print_indent(indent);
+                println!("{k:?}:");
+                dump_yaml(v, indent + 1);
+            }
+        }
+        _ => {
+            print_indent(indent);
+            println!("{doc:?}");
+        }
+    }
+}
+
+#[derive(Debug, Default)]
 pub struct ChgOpsWorkspace {
     pub current_dir: String,
     pub workspace_path: String,
@@ -19,8 +60,8 @@ pub struct ChgOpsWorkspace {
     pub arguments: String,
 
     pub playbook: Playbook,
-    pub configurations: WorkspaceConfigurations,
-    pub variables: WorkspaceVariables,
+    pub configurations: Vec<Yaml>,
+    pub variables: Vec<Yaml>,
     pub summary: PlaybookSummary,
 
 }
@@ -30,25 +71,26 @@ impl ChgOpsWorkspace {
     pub fn new() -> ChgOpsWorkspace {
         let current_dir = env::current_dir().unwrap().to_str().unwrap().to_owned();
         ChgOpsWorkspace {
-            current_dir: current_dir,
-            workspace_path: current_dir,
+            current_dir: current_dir.clone(),
+            workspace_path: current_dir.clone(),
+            playbook_name: "".to_string(),
             verbose: "".to_string(),
             arguments: "".to_string(),
 
             playbook: Playbook::new("",
                 Settings::default(),
                 vec![]),
-            configurations: WorkspaceConfigurations::new(),
-            variables: WorkspaceVariables::new(),
+            configurations: vec![],
+            variables: vec![],
             summary: PlaybookSummary::new(),
         }
     }
 
     pub fn workspace_path(&mut self) -> String {
-        let workspace_path = if workspace_path.is_empty() {
-            current_dir.to_string()
+        let workspace_path = if self.workspace_path.is_empty() {
+            self.current_dir.to_string()
         } else {
-            workspace_path.to_string()
+            self.workspace_path.to_string()
         };
 
         workspace_path
@@ -67,15 +109,13 @@ impl ChgOpsWorkspace {
     }
 
     pub fn load_workspace(&mut self) {
-        let config_yaml = std::fs::read_to_string(&self.config_full_path())
-            .expect("Failed to read config.yaml");
-        self.configurations = serde_yaml::from_str(&config_yaml)
-            .expect("Failed to parse playbook");
-        
-        let vars_yaml = std::fs::read_to_string(&self.vars_full_path())
-            .expect("Failed to read vars.yaml");
-        self.variables = serde_yaml::from_str(&vars_yaml)
-            .expect("Failed to parse playbook");
+        self.configurations = open_yaml(&self.config_full_path());
+
+        for doc in &self.configurations {
+            dump_yaml(doc, 0);
+        }
+
+        self.variables = open_yaml(&self.vars_full_path());
             
         let playbook_yaml = std::fs::read_to_string(&self.playbook_full_path())
             .expect("Failed to read playbook");
@@ -84,39 +124,49 @@ impl ChgOpsWorkspace {
     }
 
     pub fn run_playbook(&mut self) {
+        self.summary.set_start_time();
         self.start_banner();
-        self.playbook.start_play();
-        self.playbook.run_tasks();
-        self.playbook.end_play();
+
+        self.playbook.run_tasks(Some(self.verbose.clone()));
+        
+        // generate summary
+        for task in self.playbook.tasks.iter() {
+            let output = task.output();
+            self.summary.increment_as_task(output);
+        }
+
         self.end_banner();
     }
 
-    pub fn start_banner(&self) {
+    pub fn start_banner(&mut self) {
         println!("ChgOps - Change management and operations tool");
 
         println!("Engine Parameters ###########################");
 
-        println!("\tPlaybook Name: {}", self.playbook_name);
+        println!("\tPlaybook Name: {}", &self.playbook_name);
         println!("\tWorkspace Path: {}", self.workspace_path());
-        println!("\tVerbose: {}", self.verbose);
-        println!("\tArguments: {}", self.arguments);
-        println!("\tCurrent Dir: {}", self.current_dir);
-        println!("\tPlaybook Full Path: {}", self.playbook_full_path());
-        println!("\tConfigurations Full Path: {}", self.config_full_path());
-        println!("\tVariables Full Path: {}", self.vars_full_path());
+        println!("\tVerbose: {}", &self.verbose);
+        println!("\tArguments: {}", &self.arguments);
+        println!("\tFiles information:");
+        println!("\t\tCurrent Dir: {}", &self.current_dir);
+        println!("\t\tPlaybook Full Path: {}", self.playbook_full_path());
+        println!("\t\tConfigurations Full Path: {}", self.config_full_path());
+        println!("\t\tVariables Full Path: {}", self.vars_full_path());
         println!("#############################################");
 
-        self.playbook.display();
+        self.playbook.display(Some(self.verbose.clone()));
     }
 
-    pub fn end_banner(&self) {
-        self.playbook.display_summary();
+    pub fn end_banner(&mut self) {
+        self.summary.set_end_time();
+
+        self.summary.display();
         println!("ChgOps - End of execution");
     }
 
-    pub fn display(&self) {
+    pub fn display(&mut self) {
         println!("Workspace Facts ###########################");
-        println!("\tWorkspace Path: {}", self.workspace_path());
+        println!("\tWorkspace Path: {}", &self.workspace_path());
         println!("#############################################");
     }
 }
@@ -219,12 +269,29 @@ pub struct WorkspaceConfigurations {
     pub params: Option<String>
 }
 
-#[derive(Debug, Deserialize, Default, Serialize)]
-pub struct WorkspaceVariables {
-    pub params: Option<String>
-    pub vars: Option<String>
+impl WorkspaceConfigurations {
+    pub fn new() -> WorkspaceConfigurations {
+        WorkspaceConfigurations {
+            params: None
+        }
+    }
 }
 
+
+#[derive(Debug, Deserialize, Default, Serialize)]
+pub struct WorkspaceVariables {
+    pub params: Option<HashMap<String, String>>,
+    pub vars: Option<HashMap<String, String>>,
+}
+
+impl WorkspaceVariables {
+    pub fn new() -> WorkspaceVariables {
+        WorkspaceVariables {
+            params: None,
+            vars: None,
+        }
+    }
+}
 
 #[derive(Debug, Deserialize, Default, Serialize)]
 pub struct Settings {
@@ -237,9 +304,7 @@ pub struct Playbook {
     pub settings: Settings,
 
     pub tasks: Vec<PlaybookTasks>,
-    
-    #[serde(skip_deserializing)]
-    summary: PlaybookSummary,
+
 }
 
 impl Playbook {
@@ -247,90 +312,30 @@ impl Playbook {
         Playbook {
             name: name.to_string(),
             settings: settings,
-            tasks: tasks,
-            summary: PlaybookSummary::new(),
+            tasks: tasks
         }
     }
 
-    pub fn display(&self) {
+    pub fn display(&self, verbose: Option<String>) {
         println!("Playbook: {} #####################################", self.name);
         println!("\tSettings: {:?}", self.settings);
-        println!("\tTasks: {:?}", self.tasks);
+        //println!("\tTasks: {:?}", self.tasks);
+        println!("\tTasks count: {:?}", self.tasks.len());
         println!("#############################################");
     }
 
-    pub fn display_summary(&self) {
-        self.summary.display();
-    }
-
-    pub fn start_play(&mut self) {
-        self.summary.set_start_time();
-    }
-
-    pub fn run_tasks(&mut self) {
+    pub fn run_tasks(&mut self, verbose: Option<String>) {
 
         for task in self.tasks.iter_mut() {
             task.execute();
-            task.display();
+            task.display(verbose.clone());
         }
 
     }
 
-    pub fn end_play(&mut self) {
-        self.summary.set_end_time();
-        for task in self.tasks.iter() {
-            let output = task.output();
-            self.summary.increment_as_task(output);
-        }
-    }
 
 }
 
-#[derive(Debug, Deserialize, Default, Serialize, Clone)]
-pub struct EngineParameters {
-    pub playbook_name: String,
-    pub workspace_path: String,
-    pub verbose: String,
-    pub arguments: String,
-
-    pub current_dir: String,
-    pub playbook_full_path: String,
-}
-
-impl EngineParameters {
-    pub fn new(playbook_name: String, workspace_path: String, verbose: String, arguments: String) -> EngineParameters {
-        let current_dir = env::current_dir().unwrap().to_str().unwrap().to_owned();
-        
-        let workspace_path = if workspace_path.is_empty() {
-            current_dir.to_string()
-        } else {
-            workspace_path.to_string()
-        };
-
-        let playbook_full_path = format!("{}/{}.yaml", workspace_path, playbook_name);
-    
-        EngineParameters {
-            playbook_name: playbook_name,
-            workspace_path: workspace_path,
-            verbose: verbose,
-            arguments: arguments,
-            current_dir: current_dir.to_string(),
-            playbook_full_path: playbook_full_path.to_string(),
-        }
-    }
-
-    pub fn display(&self) {
-        println!("Engine Parameters ###########################");
-
-        println!("\tPlaybook Name: {}", self.playbook_name);
-        println!("\tWorkspace Path: {}", self.workspace_path);
-        println!("\tVerbose: {}", self.verbose);
-        println!("\tArguments: {}", self.arguments);
-        println!("\tCurrent Dir: {}", self.current_dir);
-        println!("\tPlaybook Full Path: {}", self.playbook_full_path);
-        println!("#############################################");
-    }
-}
 
 #[derive(Debug, Deserialize, Default, Serialize, Clone)]
 pub struct PlaybookCommandOutput {
@@ -401,7 +406,7 @@ impl PlaybookCommandOutput {
 
 pub trait PlaybookCommandTrait {
     fn execute(&mut self);
-    fn display(&self);
+    fn display(&self, verbose: Option<String>);
     fn output(&self) -> PlaybookCommandOutput;
 }
 
@@ -437,10 +442,10 @@ impl PlaybookCommandTrait for PlaybookTasks {
         }
     }
 
-    fn display(&self) {
+    fn display(&self, verbose: Option<String>) {
         match self {
-            PlaybookTasks::CoreTasks(task) => task.display(),
-            PlaybookTasks::AzureTasks(task) => task.display(),
+            PlaybookTasks::CoreTasks(task) => task.display(verbose),
+            PlaybookTasks::AzureTasks(task) => task.display(verbose),
         }
     }
 

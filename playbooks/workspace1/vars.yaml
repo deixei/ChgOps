@@ -5,3 +5,4 @@ params:
 vars:
   var1: this is a string variable
   var2: base on {{ param.param1 }} information
+  var3: "{{ dependencies.source }}"

@@ -47,12 +47,23 @@ impl PlaybookCommandTrait for BashCommandTask {
         self.output.set_end_time();
     }
 
-    fn display(&self) {
-        println!("Bash Command Task");
-        println!("\tSelf: {:?}", self);
-        println!("\tCommand: {}", self.command);
-        println!("\tName: {}", self.name.as_ref().unwrap_or(&"No name".to_string()));        
-        println!("\tOutput: {:?}", self. output);
+    fn display(&self, verbose: Option<String>) {
+        let verbose = verbose.unwrap_or("".to_string());
+        println!("*** {} ***", self.name.as_ref().unwrap_or(&self.command));
+        if verbose == "v" {
+            println!("Task: {:?}", self);
+            println!("Command: {}", self.command);
+            println!("   === Output ===");
+        }
+        if verbose == "vv" {
+            println!("{:?}", self.output);
+        }
+        else {
+            println!("   === Output ===");
+            println!("{}", self.output.stdout);
+            println!("   === Errors ===");
+            println!("{}", self.output.stderr);
+        }
     }
 
     fn output(&self) -> PlaybookCommandOutput {
@@ -82,14 +93,24 @@ impl PlaybookCommandTrait for WinCmdCommandTask {
         self.output.set_end_time();
     }
     
-    fn display(&self) {
-        println!("Win Cmd Command Task");
-        println!("\tSelf: {:?}", self);
-        println!("\tCommand: {}", self.command);
-        println!("\tName: {}", self.name.as_ref().unwrap_or(&"No name".to_string()));        
-        println!("\tOutput: {:?}", self.output);        
+    fn display(&self, verbose: Option<String>) {
+        let verbose = verbose.unwrap_or("".to_string());
+        println!("*** {} ***", self.name.as_ref().unwrap_or(&self.command));
+        if verbose == "v" {
+            println!("Task: {:?}", self);
+            println!("Command: {}", self.command);
+            println!("   === Output ===");
+        }
+        if verbose == "vv" {
+            println!("{:?}", self.output);
+        }
+        else {
+            println!("   === Output ===");
+            println!("{}", self.output.stdout);
+            println!("   === Errors ===");
+            println!("{}", self.output.stderr);
+        }
     }
-
     fn output(&self) -> PlaybookCommandOutput {
         self.output.clone()
     }
@@ -103,10 +124,10 @@ impl PlaybookCommandTrait for CoreTasks {
         }
     }
 
-    fn display(&self) {
+    fn display(&self, verbose: Option<String>) {
         match self {
-            CoreTasks::BashCommandTask(task) => task.display(),
-            CoreTasks::WinCmdCommandTask(task) => task.display(),
+            CoreTasks::BashCommandTask(task) => task.display(verbose),
+            CoreTasks::WinCmdCommandTask(task) => task.display(verbose),
         }
     }
 

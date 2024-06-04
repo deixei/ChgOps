@@ -11,14 +11,15 @@ settings:
     ansible_python_interpreter: "/usr/bin/python3"
   
 tasks:
-  - dx.azure.login:
-      command: task
-      name: "this is a demo"
-    
-  - dx.azure.cli:
-      command: task
-      name: "another demo"
-  
   - dx.core.bash:
       command: ls -al
-      name: "yet another demo"
+      name: "Directory listing in current directory"
+
+  - dx.azure.login:
+      command: "login"
+      name: "Azure Login with ENV Variables"
+    
+  - dx.azure.cli:
+      command: account list
+      name: "Show Azure Account List"
+  

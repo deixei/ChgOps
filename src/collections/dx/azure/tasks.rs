@@ -37,12 +37,23 @@ impl PlaybookCommandTrait for AzureLoginTask {
 
     }
 
-    fn display(&self) {
-        println!("Azure Login Task");
-        println!("\tSelf: {:?}", self);
-        println!("\tCommand: {}", self.command);
-        println!("\tName: {}", self.name.as_ref().unwrap_or(&"No name".to_string()));        
-        println!("\tOutput: {:?}", self.output);
+    fn display(&self, verbose: Option<String>) {
+        let verbose = verbose.unwrap_or("".to_string());
+        println!("*** {} ***", self.name.as_ref().unwrap_or(&self.command));
+        if verbose == "v" {
+            println!("Task: {:?}", self);
+            println!("Command: {}", self.command);
+            println!("   === Output ===");
+        }
+        if verbose == "vv" {
+            println!("{:?}", self.output);
+        }
+        else {
+            println!("   === Output ===");
+            println!("{}", self.output.stdout);
+            println!("   === Errors ===");
+            println!("{}", self.output.stderr);
+        }
     }
 
     fn output(&self) -> PlaybookCommandOutput {
@@ -77,12 +88,23 @@ impl PlaybookCommandTrait for AzureCliTask {
         self.output.set_end_time();
     }
 
-    fn display(&self) {
-        println!("Azure Cli Task");
-        println!("\tSelf: {:?}", self);
-        println!("\tCommand: {}", self.command);
-        println!("\tName: {}", self.name.as_ref().unwrap_or(&"No name".to_string()));        
-        println!("\tOutput: {:?}", self.output);
+    fn display(&self, verbose: Option<String>) {
+        let verbose = verbose.unwrap_or("".to_string());
+        println!("*** {} ***", self.name.as_ref().unwrap_or(&self.command));
+        if verbose == "v" {
+            println!("Task: {:?}", self);
+            println!("Command: {}", self.command);
+            println!("   === Output ===");
+        }
+        if verbose == "vv" {
+            println!("{:?}", self.output);
+        }
+        else {
+            println!("   === Output ===");
+            println!("{}", self.output.stdout);
+            println!("   === Errors ===");
+            println!("{}", self.output.stderr);
+        }
     }
 
     fn output(&self) -> PlaybookCommandOutput {
@@ -100,10 +122,10 @@ impl PlaybookCommandTrait for AzureTasks {
         }
     }
 
-    fn display(&self) {
+    fn display(&self, verbose: Option<String>) {
         match self {
-            AzureTasks::AzureLoginTask(task) => task.display(),
-            AzureTasks::AzureCliTask(task) => task.display(),
+            AzureTasks::AzureLoginTask(task) => task.display(verbose),
+            AzureTasks::AzureCliTask(task) => task.display(verbose),
         }
     }
 
