@@ -11,7 +11,10 @@ pub enum CoreTasks {
     BashCommandTask(BashCommandTask),
 
     #[serde(rename = "dx.core.wincmd")]
-    WinCmdCommandTask(WinCmdCommandTask)
+    WinCmdCommandTask(WinCmdCommandTask),
+
+    #[serde(rename = "dx.core.print")]
+    PrintCommandTask(PrintCommandTask),
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -116,11 +119,58 @@ impl PlaybookCommandTrait for WinCmdCommandTask {
     }
 }
 
+
+
+pub type PrintCommandTask = PlaybookCommand<String>;
+
+impl PlaybookCommandTrait for PrintCommandTask {
+    fn execute(&mut self) {
+        self.output = PlaybookCommandOutput::new();
+        self.output.set_start_time();
+        self.output.stdout = self.command.clone();
+        self.output.stderr = "".to_string();
+        self.output.message = "Success".to_string();
+        self.output.status = 0;
+        self.output.success = 0;
+        self.output.failed = 0;
+        self.output.skipped = 1;
+        self.output.changed = 0;
+        self.output.set_end_time();
+    }
+
+    fn display(&self, verbose: Option<String>) {
+        let verbose = verbose.unwrap_or("".to_string());
+        println!("*** {} ***", self.name.as_ref().unwrap_or(&self.command));
+        if verbose == "v" {
+            println!("Task: {:?}", self);
+            println!("Command: {}", self.command);
+            println!("   === Output ===");
+        }
+        if verbose == "vv" {
+            println!("{:?}", self.output);
+        }
+        else {
+            println!("   === Output ===");
+            println!("{}", self.output.stdout);
+            println!("   === Errors ===");
+            println!("{}", self.output.stderr);
+        }
+    }
+
+    fn output(&self) -> PlaybookCommandOutput {
+        self.output.clone()
+    }
+}
+
+
+
+
 impl PlaybookCommandTrait for CoreTasks {
     fn execute(&mut self) {
         match self {
             CoreTasks::BashCommandTask(task) => task.execute(),
             CoreTasks::WinCmdCommandTask(task) => task.execute(),
+            CoreTasks::PrintCommandTask(task) => task.execute(),
         }
     }
 
@@ -128,6 +178,7 @@ impl PlaybookCommandTrait for CoreTasks {
         match self {
             CoreTasks::BashCommandTask(task) => task.display(verbose),
             CoreTasks::WinCmdCommandTask(task) => task.display(verbose),
+            CoreTasks::PrintCommandTask(task) => task.display(verbose),
         }
     }
 
@@ -135,6 +186,7 @@ impl PlaybookCommandTrait for CoreTasks {
         match self {
             CoreTasks::BashCommandTask(task) => task.output(),
             CoreTasks::WinCmdCommandTask(task) => task.output(),
+            CoreTasks::PrintCommandTask(task) => task.output(),
         }
     }
 }

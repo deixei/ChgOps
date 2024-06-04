@@ -8,9 +8,13 @@ use lazy_static::lazy_static;
 use std::env;
 use serde_yaml;
 use std::collections::HashMap;
-use yaml_rust2::{YamlLoader, Yaml};
+use yaml_rust2::{YamlLoader, Yaml, YamlEmitter};
 use std::fs::File;
 use std::io::prelude::*;
+
+use tera::{Tera, Context};
+use serde_json::Value;
+
 
 pub fn open_yaml(filename: &str) -> Vec<Yaml> {
     let mut f = File::open(filename).unwrap();
@@ -46,6 +50,19 @@ pub fn dump_yaml(doc: &Yaml, indent: usize) {
             print_indent(indent);
             println!("{doc:?}");
         }
+    }
+}
+
+fn merge_yaml(yaml1: &mut Yaml, yaml2: &Yaml) {
+    match (yaml1, yaml2) {
+        (Yaml::Hash(hash1), Yaml::Hash(hash2)) => {
+            for (key, value) in hash2 {
+                merge_yaml(hash1.entry(key.clone()).or_insert(Yaml::Null), value);
+            }
+        },
+        (target, source) => {
+            *target = source.clone();
+        },
     }
 }
 
@@ -109,15 +126,44 @@ impl ChgOpsWorkspace {
     }
 
     pub fn load_workspace(&mut self) {
+        let playbook_full_path = self.playbook_full_path();
+
         self.configurations = open_yaml(&self.config_full_path());
-
-        for doc in &self.configurations {
-            dump_yaml(doc, 0);
-        }
-
         self.variables = open_yaml(&self.vars_full_path());
+
+        let doc1 = &mut self.configurations[0];
+        let doc2 = &self.variables[0];
+
+        merge_yaml(doc1, doc2);
+        
+        let playbook_yaml_data = open_yaml(&playbook_full_path);
+        let doc3 = &playbook_yaml_data[0];
+
+        merge_yaml(doc1, doc3);
+        
+        dump_yaml(doc1, 0);
+
+        let mut out_str = String::new();
+        {
+            let mut emitter = YamlEmitter::new(&mut out_str);
+            emitter.dump(doc1).unwrap(); // Dump the YAML object to a String
+        }
+        
+        // Convert the YAML document to a JSON Value
+        let json_value: Value = serde_yaml::from_str(&out_str).unwrap();
+
+        // Convert the JSON Value to a Context
+        let context = Context::from_value(json_value).unwrap();
+
+        let mut tera = Tera::default();
+
+        let _ = tera.add_raw_template("hello", &out_str);
+
+        // Render a template with the context
+        let rendered = tera.render("hello", &context).unwrap();
+        println!("{}", rendered);
             
-        let playbook_yaml = std::fs::read_to_string(&self.playbook_full_path())
+        let playbook_yaml = std::fs::read_to_string(&playbook_full_path)
             .expect("Failed to read playbook");
         self.playbook = serde_yaml::from_str(&playbook_yaml)
             .expect("Failed to parse playbook");
@@ -317,9 +363,14 @@ impl Playbook {
     }
 
     pub fn display(&self, verbose: Option<String>) {
+        let verbose = verbose.unwrap_or("".to_string());
         println!("Playbook: {} #####################################", self.name);
-        println!("\tSettings: {:?}", self.settings);
-        //println!("\tTasks: {:?}", self.tasks);
+        if verbose.len() >= 1  {
+            println!("\tSettings: {:?}", self.settings);
+        }
+        if verbose.len() >= 2 {
+            println!("\tTasks: {:?}", self.tasks);
+        }
         println!("\tTasks count: {:?}", self.tasks.len());
         println!("#############################################");
     }

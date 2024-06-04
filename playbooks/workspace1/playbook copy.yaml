@@ -6,7 +6,6 @@ change_id: 0
 settings:
   name: "Run commands on the local host"
   vars:
-    PAT: "{{ env('PAT', '') }}"
     ansible_connection: "local"
     ansible_python_interpreter: "/usr/bin/python3"
   

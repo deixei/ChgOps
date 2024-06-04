@@ -1,0 +1,14 @@
+#!chgops.config
+# Description: This is the configuration file for the workspace.
+dependencies:
+  source: https://deixei.azure.com
+  collections:
+    - name: dx.azure
+      version: 1.0.0
+
+params:
+  param1: this is a from config.yaml
+
+
+vars:
+  var1: change me in vars.yaml  
