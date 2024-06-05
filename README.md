@@ -8,6 +8,9 @@ cargo run -- run --help
 
 cargo run -- run -n playbook -p ./playbooks/workspace2 -a STAGE=dev
 
+After build
+~/repos/github/deixei/ChgOps/target/debug# ./chgops run --help
+
 ## Author
 
 [Marcio Parente](https://github.com/deixei) from deixei.com
