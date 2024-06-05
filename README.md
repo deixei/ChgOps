@@ -1,6 +1,12 @@
 # ChgOps
 Change management (Chg) and Operations (Ops)
 
+## Developing
+
+### local testing
+cargo run -- run --help
+
+cargo run -- run -n playbook -p ./playbooks/workspace2 -a STAGE=dev
 
 ## Author
 
