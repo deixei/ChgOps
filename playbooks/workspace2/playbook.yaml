@@ -7,10 +7,11 @@ settings:
   vars:
     ansible_connection: "local"
     ansible_python_interpreter: "/usr/bin/python3"
-  
+
+
 tasks:
   - dx.core.print:
-      command: "{{ settings.name }}"
+      command: "{{ settings.name }} {# this is a comment #}"
       name: "{{ vars.var1 ~ ' and a string ' ~ vars.var2 }}"
 
   - dx.core.print:

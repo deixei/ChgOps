@@ -8,7 +8,8 @@ dependencies:
 
 params:
   param1: this is a from config.yaml
-
+  param2: "{{ url_for(name='home') }}"
 
 vars:
-  var1: change me in vars.yaml  
+  var1: change me in vars.yaml
+  demo: "{{ params.param1 | filter2(name='111') }}"

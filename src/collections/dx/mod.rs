@@ -15,6 +15,8 @@ use std::io::prelude::*;
 use tera::{Tera, Context};
 use serde_json::Value;
 
+use crate::collections::dx::core::filters;
+
 
 pub fn open_yaml(filename: &str) -> Vec<Yaml> {
     let mut f = File::open(filename).unwrap();
@@ -81,6 +83,10 @@ pub struct ChgOpsWorkspace {
     pub variables: Vec<Yaml>,
     pub summary: PlaybookSummary,
 
+
+    pub active_playbook_document: String,
+
+
 }
 
 impl ChgOpsWorkspace {
@@ -100,6 +106,7 @@ impl ChgOpsWorkspace {
             configurations: vec![],
             variables: vec![],
             summary: PlaybookSummary::new(),
+            active_playbook_document: "".to_string(),
         }
     }
 
@@ -130,19 +137,22 @@ impl ChgOpsWorkspace {
 
         self.configurations = open_yaml(&self.config_full_path());
         self.variables = open_yaml(&self.vars_full_path());
-
         let doc1 = &mut self.configurations[0];
-        let doc2 = &self.variables[0];
 
-        merge_yaml(doc1, doc2);
+        let doc2 = &self.variables[0];
         
         let playbook_yaml_data = open_yaml(&playbook_full_path);
-        let doc3 = &playbook_yaml_data[0];
+        let doc3  = &playbook_yaml_data[0];
 
+        merge_yaml(doc1, doc2);
         merge_yaml(doc1, doc3);
         
-        dump_yaml(doc1, 0);
 
+        // show the merged yaml
+        // dump_yaml(doc1, 0);
+        
+
+        // Convert the merged YAML documents to a String
         let mut out_str = String::new();
         {
             let mut emitter = YamlEmitter::new(&mut out_str);
@@ -152,20 +162,32 @@ impl ChgOpsWorkspace {
         // Convert the YAML document to a JSON Value
         let json_value: Value = serde_yaml::from_str(&out_str).unwrap();
 
+        // at this point we should not have any templates to be replaced, so we can convert the JSON Value to a Context
+        // check if there are any templates to be replaced
+        
+
         // Convert the JSON Value to a Context
         let context = Context::from_value(json_value).unwrap();
+        println!("{:#?}", context);
 
         let mut tera = Tera::default();
-
         let _ = tera.add_raw_template("hello", &out_str);
+        tera.register_function("url_for", filters::make_url_for("demo".to_string()));
 
+        tera.register_filter("filter1", filters::filter1);
+        tera.register_filter("filter2", filters::filter2);
+        
         // Render a template with the context
         let rendered = tera.render("hello", &context).unwrap();
-        println!("{}", rendered);
-            
-        let playbook_yaml = std::fs::read_to_string(&playbook_full_path)
-            .expect("Failed to read playbook");
-        self.playbook = serde_yaml::from_str(&playbook_yaml)
+        //println!("{}", rendered);
+
+        let _ = tera.add_raw_template("postprocess", &rendered);
+
+        self.active_playbook_document = tera.render("postprocess", &context).unwrap();
+
+        println!("{}", &self.active_playbook_document);
+
+        self.playbook = serde_yaml::from_str(&self.active_playbook_document)
             .expect("Failed to parse playbook");
     }
 
@@ -341,7 +363,8 @@ impl WorkspaceVariables {
 
 #[derive(Debug, Deserialize, Default, Serialize)]
 pub struct Settings {
-    pub name: String
+    pub name: String,
+    pub vars: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug, Deserialize, Default, Serialize)]
