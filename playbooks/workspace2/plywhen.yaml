@@ -1,0 +1,23 @@
+#!chgops
+# Description: This is a simple playbook that runs two commands on the local host.
+---
+name: playbook-when
+settings:
+  name: "workspace2-when"
+  vars:
+    when_me: "evalstring"
+
+tasks:
+  - dx.core.print:
+      command: "Test1Cmd shows when_me is evalstring"
+      name: "Test1Cmd"
+      when: "{{ settings.vars.when_me == 'evalstring' }}"
+
+  - dx.core.print:
+      command: "Test2Cmd does not show when_me is evalstring"
+      name: "Test2Cmd"
+      when: "{{ settings.vars.when_me != 'evalstring' }}"
+
+  - dx.core.print:
+      command: "Test3Cmd no when"
+      name: "Test3Cmd"

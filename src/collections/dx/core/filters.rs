@@ -29,17 +29,17 @@ pub fn env_var() -> impl Function {
     })
 }
 
-pub fn make_url_for(url: String) -> impl Function {
-    Box::new(move |args: &HashMap<String, Value>| -> Result<Value> {
-        match args.get("name") {
-            Some(val) => match tera::from_value::<String>(val.clone()) {
-                Ok(v) =>  Ok(tera::to_value(url.to_string()).unwrap()),
-                Err(_) => Err("oops".into()),
-            },
-            None => Err("oops".into()),
-        }
-    })
-}
+// pub fn make_url_for(url: String) -> impl Function {
+//     Box::new(move |args: &HashMap<String, Value>| -> Result<Value> {
+//         match args.get("name") {
+//             Some(val) => match tera::from_value::<String>(val.clone()) {
+//                 Ok(val) =>  Ok(tera::to_value(url.to_string()).unwrap()),
+//                 Err(_) => Err("oops".into()),
+//             },
+//             None => Err("oops".into()),
+//         }
+//     })
+// }
 
 
 pub fn filter1(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {

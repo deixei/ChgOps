@@ -8,7 +8,6 @@ dependencies:
 
 params:
   param1: this is a from config.yaml
-  param2: "{{ url_for(name='home') }}"
   time: "{{ current_time() }}"
   client_id: "{{ env_var(name='AZURE_CLIENT_ID') }}"
 

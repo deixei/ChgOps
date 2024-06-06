@@ -5,6 +5,7 @@ name: demo-playbook
 settings:
   name: "workspace2 - Run commands on the local host"
   vars:
+    when_me: "marcio"
     ansible_connection: "local"
     ansible_python_interpreter: "/usr/bin/python3"
 
@@ -13,6 +14,7 @@ tasks:
   - dx.core.print:
       command: "{{ settings.name }} {# this is a comment #}"
       name: "{{ vars.var1 ~ ' and a string ' ~ vars.var2 }}"
+      when: "{{ settings.vars.when_me == 'marcio' }}"
 
   - dx.core.print:
       command: "{{ vars.var1 }} {{ settings.name | lower }}"

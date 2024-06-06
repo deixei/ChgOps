@@ -23,6 +23,16 @@ impl PlaybookCommandTrait for AzureLoginTask {
     fn execute(&mut self) {
         self.output = PlaybookCommandOutput::new();
         self.output.set_start_time();
+
+        let when = self.when.clone().unwrap_or("true".to_string());
+
+        if when == "false"{
+            self.output.message = "Skipped".to_string();
+            self.output.skipped = 1;
+            self.output.set_end_time();
+            return;
+        }
+
         // add your code here
         self.output.stdout = format!("Running task: {}", self.command);
         self.output.stderr = format!("Error while running task: {}", self.command);  
@@ -39,7 +49,14 @@ impl PlaybookCommandTrait for AzureLoginTask {
 
     fn display(&self, verbose: Option<String>) {
         let verbose = verbose.unwrap_or("".to_string());
-        println!("*** {} ***", self.name.as_ref().unwrap_or(&self.command));
+        println!("*** {} *** [e:{}/s:{}/f:{}/s:{}/c:{}] ***", 
+            self.name.as_ref().unwrap_or(&self.command),
+            self.output.status,
+            self.output.success,
+            self.output.failed,
+            self.output.skipped,
+            self.output.changed
+        );
         if verbose == "v" {
             println!("Task: {:?}", self);
             println!("Command: {}", self.command);
@@ -73,6 +90,15 @@ impl PlaybookCommandTrait for AzureCliTask {
         self.output = PlaybookCommandOutput::new();
         self.output.set_start_time();
 
+        let when = self.when.clone().unwrap_or("true".to_string());
+
+        if when == "false"{
+            self.output.message = "Skipped".to_string();
+            self.output.skipped = 1;
+            self.output.set_end_time();
+            return;
+        }
+
         let bash = AzCli::new(self.command.as_str());
         let output = bash.execute().expect("Failed to execute command");
 
@@ -90,7 +116,14 @@ impl PlaybookCommandTrait for AzureCliTask {
 
     fn display(&self, verbose: Option<String>) {
         let verbose = verbose.unwrap_or("".to_string());
-        println!("*** {} ***", self.name.as_ref().unwrap_or(&self.command));
+        println!("*** {} *** [e:{}/s:{}/f:{}/s:{}/c:{}] ***", 
+            self.name.as_ref().unwrap_or(&self.command),
+            self.output.status,
+            self.output.success,
+            self.output.failed,
+            self.output.skipped,
+            self.output.changed
+        );
         if verbose == "v" {
             println!("Task: {:?}", self);
             println!("Command: {}", self.command);

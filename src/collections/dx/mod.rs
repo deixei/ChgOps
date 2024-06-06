@@ -168,14 +168,14 @@ impl ChgOpsWorkspace {
 
         // Convert the JSON Value to a Context
         let context = Context::from_value(json_value).unwrap();
-        println!("{:#?}", context);
+        //println!("{:#?}", context);
 
         let mut tera = Tera::default();
         let _ = tera.add_raw_template("hello", &out_str);
         tera.register_function("current_time", filters::current_time());
 
         tera.register_function("env_var", filters::env_var());
-        tera.register_function("url_for", filters::make_url_for("demo".to_string()));
+        //tera.register_function("url_for", filters::make_url_for("demo".to_string()));
 
         tera.register_filter("filter1", filters::filter1);
         tera.register_filter("filter2", filters::filter2);

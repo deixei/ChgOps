@@ -33,6 +33,15 @@ impl PlaybookCommandTrait for BashCommandTask {
     fn execute(&mut self) {
         self.output = PlaybookCommandOutput::new();
         self.output.set_start_time();
+
+        let when = self.when.clone().unwrap_or("true".to_string());
+
+        if when == "false"{
+            self.output.message = "Skipped".to_string();
+            self.output.skipped = 1;
+            self.output.set_end_time();
+            return;
+        }
                 
         let bash = Bash::new(&self.command);
         let output = bash.execute().expect("Failed to execute command");
@@ -52,7 +61,14 @@ impl PlaybookCommandTrait for BashCommandTask {
 
     fn display(&self, verbose: Option<String>) {
         let verbose = verbose.unwrap_or("".to_string());
-        println!("*** {} ***", self.name.as_ref().unwrap_or(&self.command));
+        println!("*** {} *** [e:{}/s:{}/f:{}/s:{}/c:{}] ***", 
+            self.name.as_ref().unwrap_or(&self.command),
+            self.output.status,
+            self.output.success,
+            self.output.failed,
+            self.output.skipped,
+            self.output.changed
+        );
         if verbose == "v" {
             println!("Task: {:?}", self);
             println!("Command: {}", self.command);
@@ -80,6 +96,16 @@ impl PlaybookCommandTrait for WinCmdCommandTask {
         self.output = PlaybookCommandOutput::new();
         self.output.set_start_time();
 
+        // eval it self.when is not empty and the when is true
+        let when = self.when.clone().unwrap_or("true".to_string());
+
+        if when == "false"{
+            self.output.message = "Skipped".to_string();
+            self.output.skipped = 1;
+            self.output.set_end_time();
+            return;
+        }
+
         let wincmd = WinCmd::new(&self.command);
         let output = wincmd.execute().expect("Failed to execute command");
 
@@ -92,13 +118,21 @@ impl PlaybookCommandTrait for WinCmdCommandTask {
         self.output.failed = 0;
         self.output.skipped = 0;
         self.output.changed = 0;
-
         self.output.set_end_time();
+
+
     }
     
     fn display(&self, verbose: Option<String>) {
         let verbose = verbose.unwrap_or("".to_string());
-        println!("*** {} ***", self.name.as_ref().unwrap_or(&self.command));
+        println!("*** {} *** [e:{}/s:{}/f:{}/s:{}/c:{}] ***", 
+            self.name.as_ref().unwrap_or(&self.command),
+            self.output.status,
+            self.output.success,
+            self.output.failed,
+            self.output.skipped,
+            self.output.changed
+        );
         if verbose == "v" {
             println!("Task: {:?}", self);
             println!("Command: {}", self.command);
@@ -127,20 +161,53 @@ impl PlaybookCommandTrait for PrintCommandTask {
     fn execute(&mut self) {
         self.output = PlaybookCommandOutput::new();
         self.output.set_start_time();
+
+        let when = self.when.clone().unwrap_or("true".to_string());
+        let register = self.register.clone().unwrap_or("".to_string());
+        let state = self.state.clone().unwrap_or("present".to_string());
+
+
+        if when == "false"{
+            self.output.message = "Skipped".to_string();
+            self.output.skipped = 1;
+            self.output.set_end_time();
+            return;
+        }
+
+        if register != "" {
+            // add to the central fact store this reference
+        }
+
         self.output.stdout = self.command.clone();
         self.output.stderr = "".to_string();
+        
         self.output.message = "Success".to_string();
-        self.output.status = 0;
+        if state == "absent" {
+            self.output.message = "Removed".to_string();
+        }
+        if state == "present" {
+            self.output.message = "Success".to_string();
+        }
+
+        
+        self.output.status = 1;
         self.output.success = 0;
         self.output.failed = 0;
-        self.output.skipped = 1;
+        self.output.skipped = 0;
         self.output.changed = 0;
         self.output.set_end_time();
     }
 
     fn display(&self, verbose: Option<String>) {
         let verbose = verbose.unwrap_or("".to_string());
-        println!("*** {} ***", self.name.as_ref().unwrap_or(&self.command));
+        println!("*** {} *** [e:{}/s:{}/f:{}/s:{}/c:{}] ***", 
+            self.name.as_ref().unwrap_or(&self.command),
+            self.output.status,
+            self.output.success,
+            self.output.failed,
+            self.output.skipped,
+            self.output.changed
+        );
         if verbose == "v" {
             println!("Task: {:?}", self);
             println!("Command: {}", self.command);
