@@ -1,6 +1,7 @@
-use serde::{Deserialize, Serialize};
+pub mod files_and_dirs;
 pub mod core;
 pub mod azure;
+use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 use chrono_humanize::HumanTime;
 use std::sync::Mutex;
@@ -17,13 +18,18 @@ use serde_json::Value;
 
 use crate::collections::dx::core::filters;
 
-
 pub fn open_yaml(filename: &str) -> Vec<Yaml> {
     let mut f = File::open(filename).unwrap();
     let mut s = String::new();
     f.read_to_string(&mut s).unwrap();
 
-    let docs = YamlLoader::load_from_str(&s).unwrap();
+    let docs = match YamlLoader::load_from_str(&s) {
+        Ok(docs) => docs,
+        Err(err) => {
+            eprintln!("ERROR: filename:{} parsing YAML: {}", filename, err);
+            return Vec::new();
+        }
+    };
 
     docs
 }
@@ -68,6 +74,57 @@ fn merge_yaml(yaml1: &mut Yaml, yaml2: &Yaml) {
     }
 }
 
+pub fn load_yaml_data_into_facts(facts: &mut Yaml, collections_path: String, workspace_path: String) {
+    // read all files *.yaml including subdirectories from collections_path, order by name, with config.yaml and vars.yaml always first 
+    // read all files *.yaml including subdirectories from workspace_path, order by name, with config.yaml and vars.yaml always first
+
+    // merge all the yaml files into a single yaml document for each collection and workspace
+    // load the merged yaml document into a facts dictionary
+
+    let list_of_files_in_collection = files_and_dirs::find_files_by_regex(collections_path.clone(), ".yaml".to_string()).unwrap_or_else(|err| {
+        println!("Error finding files in collection: {}", err);
+        panic!()
+    });
+
+    let list_of_files_in_workspace = files_and_dirs::find_files_by_regex(workspace_path.clone(), ".yaml".to_string()).unwrap_or_else(|err| {
+        println!("Error finding files in workspace: {}", err);
+        panic!()
+    });
+
+    println!("Collections: {:#?}", collections_path.clone());
+    for file in list_of_files_in_collection {
+        let file_name = file.clone();
+        //println!("file: {:?}", file_name);
+        if file_name.contains("config.yaml") {
+            println!("config_file: {:?}", file_name);
+            merge_yaml(facts, open_yaml(&file_name).get(0).unwrap());
+        }
+        if file_name.contains("vars.yaml") {
+            println!("vars_file  : {:?}", file_name);
+            merge_yaml(facts, open_yaml(&file_name).get(0).unwrap());
+        }
+    }
+
+    println!("Workspace: {:?}", workspace_path.clone());
+    for file in list_of_files_in_workspace {
+        let file_name = file.clone();
+        //println!("file: {:?}", file_name);
+        if file_name.contains("config.yaml") {
+            println!("config_file: {:?}", file_name);
+            merge_yaml(facts, open_yaml(&file_name).get(0).unwrap());
+        }
+        if file_name.contains("vars.yaml") {
+            println!("vars_file  : {:?}", file_name);
+            merge_yaml(facts, open_yaml(&file_name).get(0).unwrap());
+        }
+    }
+
+}
+
+lazy_static! {
+    pub static ref WORKSPACE: Mutex<ChgOpsWorkspace> = Mutex::new(ChgOpsWorkspace::new());
+}
+
 #[derive(Debug, Default)]
 pub struct ChgOpsWorkspace {
     pub current_dir: String,
@@ -86,7 +143,8 @@ pub struct ChgOpsWorkspace {
 
     pub active_playbook_document: String,
 
-
+    // dictionary of all the playbooks to hold facts
+    pub facts: HashMap<String, PlaybookCommandOutput>,
 }
 
 impl ChgOpsWorkspace {
@@ -107,6 +165,21 @@ impl ChgOpsWorkspace {
             variables: vec![],
             summary: PlaybookSummary::new(),
             active_playbook_document: "".to_string(),
+            facts: HashMap::new(),
+        }
+    }
+
+    pub fn add_fact(&mut self, key: String, value: PlaybookCommandOutput) {
+        self.facts.insert(key, value);
+    }
+
+    pub fn get_fact(&mut self, key: String) -> PlaybookCommandOutput {
+        self.facts.get(&key).unwrap().clone()
+    }
+
+    pub fn print_facts(&mut self) {
+        for (key, value) in &self.facts {
+            println!("Key: {}, Value: {:?}", key, value);
         }
     }
 
@@ -118,6 +191,10 @@ impl ChgOpsWorkspace {
         };
 
         workspace_path
+    }
+
+    pub fn collection_path(&mut self) -> String {
+        format!("{}/collections", &self.current_dir)
     }
 
     pub fn playbook_full_path(&mut self) -> String {
@@ -133,30 +210,33 @@ impl ChgOpsWorkspace {
     }
 
     pub fn load_workspace(&mut self) {
+
+        let facts: &mut Yaml = &mut Yaml::Null;
+        
+        load_yaml_data_into_facts(facts, self.collection_path(), self.workspace_path());
+
         let playbook_full_path = self.playbook_full_path();
 
-        self.configurations = open_yaml(&self.config_full_path());
-        self.variables = open_yaml(&self.vars_full_path());
-        let doc1 = &mut self.configurations[0];
+        //self.configurations = open_yaml(&self.config_full_path());
+        //self.variables = open_yaml(&self.vars_full_path());
+        //let doc1 = &mut self.configurations[0];
 
-        let doc2 = &self.variables[0];
+        //let doc2 = &self.variables[0];
         
         let playbook_yaml_data = open_yaml(&playbook_full_path);
         let doc3  = &playbook_yaml_data[0];
 
-        merge_yaml(doc1, doc2);
-        merge_yaml(doc1, doc3);
-        
+        merge_yaml(facts, doc3);
 
         // show the merged yaml
-        // dump_yaml(doc1, 0);
+        // dump_yaml(facts, 0);
         
 
         // Convert the merged YAML documents to a String
         let mut out_str = String::new();
         {
             let mut emitter = YamlEmitter::new(&mut out_str);
-            emitter.dump(doc1).unwrap(); // Dump the YAML object to a String
+            emitter.dump(facts).unwrap(); // Dump the YAML object to a String
         }
         
         // Convert the YAML document to a JSON Value
@@ -195,6 +275,9 @@ impl ChgOpsWorkspace {
     }
 
     pub fn run_playbook(&mut self) {
+
+        
+
         self.summary.set_start_time();
         self.start_banner();
 
@@ -205,7 +288,7 @@ impl ChgOpsWorkspace {
             let output = task.output();
             self.summary.increment_as_task(output);
         }
-
+        
         self.end_banner();
     }
 
@@ -242,9 +325,7 @@ impl ChgOpsWorkspace {
     }
 }
 
-lazy_static! {
-    pub static ref WORKSPACE: Mutex<ChgOpsWorkspace> = Mutex::new(ChgOpsWorkspace::new());
-}
+
 
 
 
@@ -498,9 +579,6 @@ pub struct PlaybookCommand<T> {
 
     #[serde(skip_deserializing)]
     pub output: PlaybookCommandOutput,
-
-    #[serde(skip_deserializing)]
-    pub parent: Playbook,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

@@ -174,10 +174,6 @@ impl PlaybookCommandTrait for PrintCommandTask {
             return;
         }
 
-        if register != "" {
-            // add to the central fact store this reference
-        }
-
         self.output.stdout = self.command.clone();
         self.output.stderr = "".to_string();
         
@@ -195,6 +191,13 @@ impl PlaybookCommandTrait for PrintCommandTask {
         self.output.failed = 0;
         self.output.skipped = 0;
         self.output.changed = 0;
+
+        if register != "" {
+            // add to the central fact store this reference
+            //let mut workspace = WORKSPACE.lock().unwrap();
+            //workspace.facts.insert(register.clone(), self.output.clone());
+        }
+
         self.output.set_end_time();
     }
 

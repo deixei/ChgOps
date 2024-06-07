@@ -1,5 +1,10 @@
 #!chgops.vars
 ---
+self:
+  sites_name: "marcio"
+  serverfarms_asp_externalid: "marcio"
+  subscription: "marcio"
+  resourceGroup: "marcio"
 params:
   param1: &param1 this is a input parameter in vars.yaml
   param2: "{{ dependencies.source | filter1 }}"
@@ -13,7 +18,7 @@ vars:
 
 bom:
 
-  webapp1: *azure_blueprint_blueprint1
+  webapp1: 
     parameters:
       parameters:
         sites_name:
@@ -21,7 +26,7 @@ bom:
         serverfarms_asp_externalid:
           value: "demo2"
 
-  webapp2: *azure_blueprint_blueprint1
+  webapp2: 
     parameters:
       parameters:
         sites_name:

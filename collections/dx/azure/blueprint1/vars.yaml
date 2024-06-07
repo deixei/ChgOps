@@ -170,7 +170,7 @@ azure:
           dependsOn:
           - "[resourceId('Microsoft.Web/sites', parameters('sites_name'))]"
           properties:
-            siteName: {{ self.sites_name }}
+            siteName: "{{ self.sites_name }}"
             hostNameType: Verified
         - type: Microsoft.Web/sites/privateEndpointConnections
           apiVersion: '2023-12-01'

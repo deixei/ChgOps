@@ -1,0 +1,17 @@
+#!chgops
+# Description: This is a simple playbook that runs two commands on the local host.
+---
+name: playbook-when
+settings:
+  name: "workspace2-when"
+
+tasks:
+  - dx.core.print:
+      command: "Test1Cmd"
+      name: "Test1Cmd"
+      register: keyword1
+
+  - dx.core.print:
+      command: "Test2Cmd"
+      name: "Test2Cmd"
+      when: "{{ keyword1.stdout == 'evalstring' }}"
