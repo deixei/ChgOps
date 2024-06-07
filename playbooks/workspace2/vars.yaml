@@ -9,3 +9,22 @@ vars:
   var4: *param1
   var2: base on {{ params.param1 }} information
   var3: "{{ dependencies.source }}"
+
+
+bom:
+
+  webapp1: *azure_blueprint_blueprint1
+    parameters:
+      parameters:
+        sites_name:
+          value: "demo1"
+        serverfarms_asp_externalid:
+          value: "demo2"
+
+  webapp2: *azure_blueprint_blueprint1
+    parameters:
+      parameters:
+        sites_name:
+          value: "demo3"
+        serverfarms_asp_externalid:
+          value: "demo3"          
