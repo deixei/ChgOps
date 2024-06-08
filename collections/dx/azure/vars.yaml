@@ -3,30 +3,11 @@
 azure:
   locations: [
     "East US",
-    "East US 2",
-    "West US 2",
     "West Europe",
-    "Central US",
-    "West US",
     "North Europe",
-    "Southeast Asia",
-    "UK South",
-    "Australia East",
-    "South India",
     "Switzerland North",
-    "North Central US",
-    "South Central US",
-    "West US 3",
-    "Canada Central",
-    "Canada East",
-    "Central India",
-    "Australia Central",
-    "Australia Southeast",
     "Japan East",
-    "France Central",
-    "Norway East",
-    "Germany West Central",
-    "Sweden Central"
+    "France Central"
     ]
   resource_types:
     - virtual_machines

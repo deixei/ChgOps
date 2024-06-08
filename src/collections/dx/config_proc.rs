@@ -1,28 +1,51 @@
 use serde_yaml;
-use serde_yaml::{Value, Mapping};
+use serde_yaml::Mapping;
+use serde_json;
+use serde_yaml::Value as YamlValue;
+use serde_json::Value as JsonValue;
+use std::error::Error;
 
 use std::fs;
 use tera::{Tera, Context};
 use std::collections::BTreeMap;
 use regex::Regex;
 
+use super::core::filters;
 
-fn read_yaml(file_path: &str) -> Result<Value, Box<dyn std::error::Error>> {
+
+pub fn read_yaml(file_path: &str) -> Result<serde_yaml::Value, Box<dyn std::error::Error>> {
     let content = fs::read_to_string(file_path)?;
-    let yaml: Value = serde_yaml::from_str(&content)?;
+    let yaml: serde_yaml::Value = serde_yaml::from_str(&content)?;
     Ok(yaml)
 }
 
-fn process_template(template_str: &str, context: &Context) -> Result<String, tera::Error> {
-    let mut tera = Tera::default(); // Or load templates from a directory
-    tera.render_str(template_str, context)
+pub fn yaml_to_string(yaml: &serde_yaml::Value) -> String {
+    serde_yaml::to_string(yaml).unwrap()
 }
 
-fn merge_yaml(a: &mut Value, b: Value) {
+pub fn yaml_to_json(yaml_value: &YamlValue) -> Result<JsonValue, Box<dyn Error>> {
+    let json_value: JsonValue = serde_json::to_value(yaml_value)?;
+    
+    Ok(json_value)
+}
+
+pub fn process_template(template_str: &str, context: &Context) -> Result<String, tera::Error> {
+    let mut tera = Tera::default();
+    let _ = tera.add_raw_template("process_template", &template_str);
+    tera.register_function("current_time", filters::current_time());
+    tera.register_function("env_var", filters::env_var());
+    tera.register_filter("filter1", filters::filter1);
+    tera.register_filter("filter2", filters::filter2);
+    
+    tera.render("process_template", &context)
+   
+}
+
+pub fn merge_yaml(a: &mut YamlValue, b: YamlValue) {
     match (a, b) {
-        (Value::Mapping(a_map), Value::Mapping(b_map)) => {
+        (YamlValue::Mapping(a_map), YamlValue::Mapping(b_map)) => {
             for (k, v) in b_map {
-                merge_yaml(a_map.entry(k).or_insert(Value::Null), v);
+                merge_yaml(a_map.entry(k).or_insert(YamlValue::Null), v);
             }
         }
         (a_val, b_val) => {
@@ -31,21 +54,20 @@ fn merge_yaml(a: &mut Value, b: Value) {
     }
 }
 
-fn resolve_references(value: &mut Value, references: &BTreeMap<String, Value>) {
+fn resolve_references(value: &mut YamlValue, references: &BTreeMap<String, YamlValue>) {
     let re = Regex::new(r"\{\{ ref:([a-zA-Z0-9_]+) \}\}").unwrap();
     match value {
-        Value::String(s) => {
+        YamlValue::String(s) => {
             *s = re.replace_all(s, |caps: &regex::Captures| {
-                references.get(&caps[1]).unwrap_or(&Value::Null).as_str().unwrap_or("").to_string()
+                references.get(&caps[1]).unwrap_or(&YamlValue::Null).as_str().unwrap_or("").to_string()
             }).to_string();
         }
-        Value::Mapping(map) => {
+        YamlValue::Mapping(map) => {
             for val1 in map.iter_mut() {
-                let val = val1.1;
-                resolve_references(val, references);
+                resolve_references(val1.1, references);
             }
         }
-        Value::Sequence(seq) => {
+        YamlValue::Sequence(seq) => {
             for val in seq.iter_mut() {
                 resolve_references(val, references);
             }
@@ -54,40 +76,40 @@ fn resolve_references(value: &mut Value, references: &BTreeMap<String, Value>) {
     }
 }
 
-pub fn process_configuration_files() -> Result<(), Box<dyn std::error::Error>> {
+pub fn process_configuration_files(collections_files: Vec<String>, workplace_files:Vec<String>) -> Result<YamlValue, Box<dyn std::error::Error>> {
     println!("Processing configuration files...");
-    let file_paths = vec![
-            "/home/marcio/repos/deixei/ChgOps/collections/dx/azure/vars.yaml", 
-            "/home/marcio/repos/deixei/ChgOps/collections/dx/azure/blueprint1/vars.yaml", 
-            "/home/marcio/repos/deixei/ChgOps/collections/dx/azure/blueprint2/vars.yaml",
-            "./playbooks/workspace2/vars.yaml"];
-            //"./playbooks/workspace2/plyreg1.yaml"];
-    let mut merged_yaml = serde_yaml::Value::Mapping(Mapping::new());
+    let file_paths: Vec<String> = collections_files.into_iter().chain(workplace_files).collect();
+    let mut merged_yaml = YamlValue::Mapping(Mapping::new());
     let mut references = BTreeMap::new();
 
     for file_path in &file_paths {
-        let yaml = read_yaml(file_path)?;
-        // Assume each file can contain templates that need to be processed
-        let context = Context::new();
-        let yaml_str = serde_yaml::to_string(&yaml)?;
-        let processed_str = process_template(&yaml_str, &context)?;
-        let processed_yaml: Value = serde_yaml::from_str(&processed_str)?;
+        let yaml: YamlValue = read_yaml(file_path)?;
         
-        merge_yaml(&mut merged_yaml, processed_yaml.clone());
+        merge_yaml(&mut merged_yaml, yaml.clone());
 
         // Collect references if any (this part depends on your reference structure)
-        if let Value::Mapping(map) = &processed_yaml {
+        if let YamlValue::Mapping(map) = &yaml {
             for (k, v) in map {
-                if let Value::String(s) = k {
+                if let YamlValue::String(s) = k {
                     references.insert(s.clone(), v.clone());
                 }
             }
         }
     }
-
-    // Resolve references in the merged YAML
+    //let context = Context::new();
     resolve_references(&mut merged_yaml, &references);
 
-    println!("COMPUTED: {}", serde_yaml::to_string(&merged_yaml)?);
-    Ok(())
+    let template_str = yaml_to_string(&merged_yaml);
+    let json_value: JsonValue = yaml_to_json(&merged_yaml).unwrap();
+    let context = Context::from_value(json_value).unwrap();
+
+    let computed_str = process_template(&template_str, &context);
+    //println!("COMPUTED: {:#?}", computed_str); 
+
+    let final_yaml: YamlValue = serde_yaml::from_str(&computed_str.unwrap())?;
+
+    //let merged_yaml_str = serde_yaml::to_string(&final_yaml)?;
+    //println!("MERGED: {}", merged_yaml_str);
+    
+    Ok(final_yaml)
 }

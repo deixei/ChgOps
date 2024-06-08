@@ -13,7 +13,7 @@ use std::collections::HashMap;
 use yaml_rust2::{YamlLoader, Yaml, YamlEmitter};
 use std::fs::File;
 use std::io::prelude::*;
-
+use serde_yaml::Mapping;
 use tera::{Tera, Context};
 use serde_json::Value;
 use crate::collections::dx::core::filters;
@@ -232,70 +232,43 @@ impl ChgOpsWorkspace {
     }
 
     pub fn load_workspace(&mut self) {
-
-
-        if let Err(e) = config_proc::process_configuration_files() {
-            eprintln!("Error: {}", e);
-        }
+        let list_of_files_in_collection = files_and_dirs::find_files_by_regex(self.collection_path(), ".yaml".to_string()).unwrap_or_else(|err| {
+            println!("Error finding files in collection: {}", err);
+            panic!()
+        });
+    
+        let list_of_files_in_workspace = files_and_dirs::find_files_by_regex(self.workspace_path(), ".yaml".to_string()).unwrap_or_else(|err| {
+            println!("Error finding files in workspace: {}", err);
+            panic!()
+        });
         
-        let facts: &mut Yaml = &mut Yaml::Null;
-        
-        //load_yaml_data_into_facts(facts, self.collection_path(), self.workspace_path());
+        let mut facts = serde_yaml::Value::Mapping(Mapping::new());
+
+        let proc = config_proc::process_configuration_files(
+            list_of_files_in_collection, 
+            list_of_files_in_workspace);
+        match proc {
+            Ok(data) => {
+                println!("Facts: {:#?}", data);
+                facts = data;
+            },
+            Err(err) => {
+                eprintln!("ERROR: processing configuration files: {}", err);
+            }
+        };
 
         let playbook_full_path = self.playbook_full_path();
+        let playbook_yaml_data = config_proc::read_yaml(&playbook_full_path);
 
-        //self.configurations = open_yaml(&self.config_full_path());
-        //self.variables = open_yaml(&self.vars_full_path());
-        //let doc1 = &mut self.configurations[0];
-
-        //let doc2 = &self.variables[0];
-        
-        let playbook_yaml_data = open_yaml(&playbook_full_path);
-        let doc3  = &playbook_yaml_data[0];
-
-        merge_yaml(facts, doc3);
-
-        // show the merged yaml
-        // dump_yaml(facts, 0);
-        
-
-        // Convert the merged YAML documents to a String
-        let mut out_str = String::new();
-        {
-            let mut emitter = YamlEmitter::new(&mut out_str);
-            emitter.dump(facts).unwrap(); // Dump the YAML object to a String
-        }
-        
-        // Convert the YAML document to a JSON Value
-        let json_value: Value = serde_yaml::from_str(&out_str).unwrap();
-
-        // at this point we should not have any templates to be replaced, so we can convert the JSON Value to a Context
-        // check if there are any templates to be replaced
-        
-
-        // Convert the JSON Value to a Context
+        config_proc::merge_yaml(&mut facts, playbook_yaml_data.unwrap());
+        let template_str: String = config_proc::yaml_to_string(&facts);
+        let json_value: serde_json::Value = config_proc::yaml_to_json(&facts).unwrap();
         let context = Context::from_value(json_value).unwrap();
-        //println!("{:#?}", context);
+    
 
-        let mut tera = Tera::default();
-        let _ = tera.add_raw_template("hello", &out_str);
-        tera.register_function("current_time", filters::current_time());
+        self.active_playbook_document = config_proc::process_template(&template_str, &context).expect("Failed to process template");
 
-        tera.register_function("env_var", filters::env_var());
-        //tera.register_function("url_for", filters::make_url_for("demo".to_string()));
-
-        tera.register_filter("filter1", filters::filter1);
-        tera.register_filter("filter2", filters::filter2);
-        
-        // Render a template with the context
-        let rendered = tera.render("hello", &context).unwrap();
-        //println!("{}", rendered);
-
-        let _ = tera.add_raw_template("postprocess", &rendered);
-
-        self.active_playbook_document = tera.render("postprocess", &context).unwrap();
-
-        println!("{}", &self.active_playbook_document);
+        println!("active_playbook_document: {:#?}", &self.active_playbook_document);
 
         self.playbook = serde_yaml::from_str(&self.active_playbook_document)
             .expect("Failed to parse playbook");

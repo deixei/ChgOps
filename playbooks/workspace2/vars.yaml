@@ -19,7 +19,7 @@ vars:
 
 bom:
 
-  webapp1: *azure_blueprint_blueprint1
+  webapp1: 
     parameters:
       parameters:
         sites_name:
