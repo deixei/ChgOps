@@ -5,6 +5,7 @@ self:
   serverfarms_asp_externalid: "marcio"
   subscription: "marcio"
   resourceGroup: "marcio"
+
 params:
   param1: &param1 this is a input parameter in vars.yaml
   param2: "{{ dependencies.source | filter1 }}"
@@ -18,7 +19,7 @@ vars:
 
 bom:
 
-  webapp1: 
+  webapp1: *azure_blueprint_blueprint1
     parameters:
       parameters:
         sites_name:

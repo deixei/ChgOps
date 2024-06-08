@@ -1,0 +1,45 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'chgops'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=chgops",
+                    "--package=chgops"
+                ],
+                "filter": {
+                    "name": "chgops",
+                    "kind": "bin"
+                }
+            },
+            "args": ["run", "--name","playbook", "--path", "./playbooks/workspace1"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'chgops'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=chgops",
+                    "--package=chgops"
+                ],
+                "filter": {
+                    "name": "chgops",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

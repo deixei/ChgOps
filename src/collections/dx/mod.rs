@@ -1,4 +1,5 @@
 pub mod files_and_dirs;
+pub mod config_proc;
 pub mod core;
 pub mod azure;
 use serde::{Deserialize, Serialize};
@@ -15,7 +16,6 @@ use std::io::prelude::*;
 
 use tera::{Tera, Context};
 use serde_json::Value;
-
 use crate::collections::dx::core::filters;
 
 pub fn open_yaml(filename: &str) -> Vec<Yaml> {
@@ -90,18 +90,21 @@ pub fn load_yaml_data_into_facts(facts: &mut Yaml, collections_path: String, wor
         println!("Error finding files in workspace: {}", err);
         panic!()
     });
-
+    let mut yaml_files = vec![];
+    
     println!("Collections: {:#?}", collections_path.clone());
     for file in list_of_files_in_collection {
         let file_name = file.clone();
         //println!("file: {:?}", file_name);
         if file_name.contains("config.yaml") {
-            println!("config_file: {:?}", file_name);
-            merge_yaml(facts, open_yaml(&file_name).get(0).unwrap());
+            yaml_files.push(file.clone());
+            //println!("config_file: {:?}", file_name);
+            //merge_yaml(facts, open_yaml(&file_name).get(0).unwrap());
         }
         if file_name.contains("vars.yaml") {
-            println!("vars_file  : {:?}", file_name);
-            merge_yaml(facts, open_yaml(&file_name).get(0).unwrap());
+            yaml_files.push(file.clone());
+            //println!("vars_file  : {:?}", file_name);
+            //merge_yaml(facts, open_yaml(&file_name).get(0).unwrap());
         }
     }
 
@@ -110,14 +113,33 @@ pub fn load_yaml_data_into_facts(facts: &mut Yaml, collections_path: String, wor
         let file_name = file.clone();
         //println!("file: {:?}", file_name);
         if file_name.contains("config.yaml") {
-            println!("config_file: {:?}", file_name);
-            merge_yaml(facts, open_yaml(&file_name).get(0).unwrap());
+            yaml_files.push(file.clone());
+            //println!("config_file: {:?}", file_name);
+            //merge_yaml(facts, open_yaml(&file_name).get(0).unwrap());
         }
         if file_name.contains("vars.yaml") {
-            println!("vars_file  : {:?}", file_name);
-            merge_yaml(facts, open_yaml(&file_name).get(0).unwrap());
+            yaml_files.push(file.clone());
+            //println!("vars_file  : {:?}", file_name);
+            //merge_yaml(facts, open_yaml(&file_name).get(0).unwrap());
         }
     }
+
+    let mut yaml_files_data = vec![];
+    for file in yaml_files {
+        let file_name = file.clone();
+        yaml_files_data.push(files_and_dirs::read_file(&file_name));
+    }
+
+    
+
+    let docs = match YamlLoader::load_from_str(&yaml_files_data.join("\n")) {
+        Ok(docs) => docs,
+        Err(err) => {
+            eprintln!("ERROR: parsing YAML: {}", err);
+            return;
+        }
+    };
+    println!("yaml_files_data: {:?}", docs);
 
 }
 
@@ -211,9 +233,14 @@ impl ChgOpsWorkspace {
 
     pub fn load_workspace(&mut self) {
 
+
+        if let Err(e) = config_proc::process_configuration_files() {
+            eprintln!("Error: {}", e);
+        }
+        
         let facts: &mut Yaml = &mut Yaml::Null;
         
-        load_yaml_data_into_facts(facts, self.collection_path(), self.workspace_path());
+        //load_yaml_data_into_facts(facts, self.collection_path(), self.workspace_path());
 
         let playbook_full_path = self.playbook_full_path();
 

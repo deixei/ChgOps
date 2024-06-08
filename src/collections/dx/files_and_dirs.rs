@@ -1,5 +1,7 @@
 use std::fs;
 use std::error::Error;
+use std::fs::File;
+use std::io::prelude::*;
 
 pub fn list_all_files_and_dirs(path: String) -> Result<Vec<String>, Box<dyn Error>> {
     let mut files = vec![];
@@ -41,4 +43,13 @@ pub fn find_files_by_regex(path: String, regex: String) -> Result<Vec<String>, B
 
 pub fn sort_files_by_path_length(files: &mut Vec<String>) {
     files.sort_by(|a, b| a.len().cmp(&b.len()));
+}
+
+
+pub fn read_file(filename: &str) -> String {
+    let mut f = File::open(filename).unwrap();
+    let mut s = String::new();
+    f.read_to_string(&mut s).unwrap();
+
+    s
 }
