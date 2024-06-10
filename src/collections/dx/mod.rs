@@ -10,13 +10,13 @@ use lazy_static::lazy_static;
 use std::env;
 use serde_yaml;
 use std::collections::HashMap;
-use yaml_rust2::{YamlLoader, Yaml, YamlEmitter};
+use yaml_rust2::{YamlLoader, Yaml};
 use std::fs::File;
 use std::io::prelude::*;
 use serde_yaml::Mapping;
-use tera::{Tera, Context};
-use serde_json::Value;
-use crate::collections::dx::core::filters;
+use tera::Context;
+
+
 
 pub fn open_yaml(filename: &str) -> Vec<Yaml> {
     let mut f = File::open(filename).unwrap();
@@ -59,88 +59,6 @@ pub fn dump_yaml(doc: &Yaml, indent: usize) {
             println!("{doc:?}");
         }
     }
-}
-
-fn merge_yaml(yaml1: &mut Yaml, yaml2: &Yaml) {
-    match (yaml1, yaml2) {
-        (Yaml::Hash(hash1), Yaml::Hash(hash2)) => {
-            for (key, value) in hash2 {
-                merge_yaml(hash1.entry(key.clone()).or_insert(Yaml::Null), value);
-            }
-        },
-        (target, source) => {
-            *target = source.clone();
-        },
-    }
-}
-
-pub fn load_yaml_data_into_facts(facts: &mut Yaml, collections_path: String, workspace_path: String) {
-    // read all files *.yaml including subdirectories from collections_path, order by name, with config.yaml and vars.yaml always first 
-    // read all files *.yaml including subdirectories from workspace_path, order by name, with config.yaml and vars.yaml always first
-
-    // merge all the yaml files into a single yaml document for each collection and workspace
-    // load the merged yaml document into a facts dictionary
-
-    let list_of_files_in_collection = files_and_dirs::find_files_by_regex(collections_path.clone(), ".yaml".to_string()).unwrap_or_else(|err| {
-        println!("Error finding files in collection: {}", err);
-        panic!()
-    });
-
-    let list_of_files_in_workspace = files_and_dirs::find_files_by_regex(workspace_path.clone(), ".yaml".to_string()).unwrap_or_else(|err| {
-        println!("Error finding files in workspace: {}", err);
-        panic!()
-    });
-    let mut yaml_files = vec![];
-    
-    println!("Collections: {:#?}", collections_path.clone());
-    for file in list_of_files_in_collection {
-        let file_name = file.clone();
-        //println!("file: {:?}", file_name);
-        if file_name.contains("config.yaml") {
-            yaml_files.push(file.clone());
-            //println!("config_file: {:?}", file_name);
-            //merge_yaml(facts, open_yaml(&file_name).get(0).unwrap());
-        }
-        if file_name.contains("vars.yaml") {
-            yaml_files.push(file.clone());
-            //println!("vars_file  : {:?}", file_name);
-            //merge_yaml(facts, open_yaml(&file_name).get(0).unwrap());
-        }
-    }
-
-    println!("Workspace: {:?}", workspace_path.clone());
-    for file in list_of_files_in_workspace {
-        let file_name = file.clone();
-        //println!("file: {:?}", file_name);
-        if file_name.contains("config.yaml") {
-            yaml_files.push(file.clone());
-            //println!("config_file: {:?}", file_name);
-            //merge_yaml(facts, open_yaml(&file_name).get(0).unwrap());
-        }
-        if file_name.contains("vars.yaml") {
-            yaml_files.push(file.clone());
-            //println!("vars_file  : {:?}", file_name);
-            //merge_yaml(facts, open_yaml(&file_name).get(0).unwrap());
-        }
-    }
-
-    let mut yaml_files_data = vec![];
-    for file in yaml_files {
-        let file_name = file.clone();
-        yaml_files_data.push(files_and_dirs::read_file(&file_name));
-    }
-
-    
-
-    let docs = match YamlLoader::load_from_str(&yaml_files_data.join("\n")) {
-        Ok(docs) => docs,
-        Err(err) => {
-            eprintln!("ERROR: parsing YAML: {}", err);
-            return;
-        }
-    };
-    println!("yaml_files_data: {:?}", docs);
-
 }
 
 lazy_static! {
@@ -232,15 +150,33 @@ impl ChgOpsWorkspace {
     }
 
     pub fn load_workspace(&mut self) {
-        let list_of_files_in_collection = files_and_dirs::find_files_by_regex(self.collection_path(), ".yaml".to_string()).unwrap_or_else(|err| {
+        let pattern1 = r".*\.yaml$";
+
+        let list_of_files_in_collection = files_and_dirs::find_files_by_regex(self.collection_path(), pattern1).unwrap_or_else(|err| {
             println!("Error finding files in collection: {}", err);
             panic!()
         });
-    
-        let list_of_files_in_workspace = files_and_dirs::find_files_by_regex(self.workspace_path(), ".yaml".to_string()).unwrap_or_else(|err| {
+
+        //println!("list_of_files_in_collection: {:#?}", list_of_files_in_collection);
+
+        if list_of_files_in_collection.len() == 0 {
+            eprintln!("ERROR: No files found in collection");
+            panic!();
+        }
+
+        let pattern = r".*/vars/.*\.yaml$";
+
+        let list_of_files_in_workspace = files_and_dirs::find_files_by_regex(self.workspace_path(), pattern).unwrap_or_else(|err| {
             println!("Error finding files in workspace: {}", err);
             panic!()
         });
+
+        if list_of_files_in_workspace.len() == 0 {
+            eprintln!("ERROR: No 'vars' files found in workspace");
+            panic!();
+        }
+
+        //println!("list_of_files_in_workspace: {:#?}", list_of_files_in_workspace);
         
         let mut facts = serde_yaml::Value::Mapping(Mapping::new());
 
@@ -249,7 +185,7 @@ impl ChgOpsWorkspace {
             list_of_files_in_workspace);
         match proc {
             Ok(data) => {
-                println!("Facts: {:#?}", data);
+                //println!("Facts: {:#?}", data);
                 facts = data;
             },
             Err(err) => {
@@ -268,7 +204,7 @@ impl ChgOpsWorkspace {
 
         self.active_playbook_document = config_proc::process_template(&template_str, &context).expect("Failed to process template");
 
-        println!("active_playbook_document: {:#?}", &self.active_playbook_document);
+        println!("active_playbook_document: {:?}", &self.active_playbook_document);
 
         self.playbook = serde_yaml::from_str(&self.active_playbook_document)
             .expect("Failed to parse playbook");

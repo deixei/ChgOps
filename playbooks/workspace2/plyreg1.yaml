@@ -7,7 +7,7 @@ settings:
 
 tasks:
   - dx.core.print:
-      command: "Test1Cmd"
-      name: "{{ azure.tags.Ecosystem }}"
-      register: keyword1
+      command: "{{ azure.tags.Ecosystem }}"
+      name: "Ecosystem"
+      register: eco1
 

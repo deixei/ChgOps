@@ -14,6 +14,11 @@ cargo build
 
 After build ~/repos/github/deixei/ChgOps/target/debug# ./chgops run --help
 
+##### debug
+
+https://www.forrestthewoods.com/blog/how-to-debug-rust-with-visual-studio-code/
+
+
 ## Author
 
 [Marcio Parente](https://github.com/deixei) from deixei.com

@@ -10,6 +10,8 @@ settings:
     ansible_python_interpreter: "/usr/bin/python3"
 
 
+
+
 tasks:
   - dx.core.print:
       command: "{{ settings.name }} {# this is a comment #}"

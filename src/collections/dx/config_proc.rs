@@ -12,23 +12,29 @@ use regex::Regex;
 
 use super::core::filters;
 
-
+/// Reads a YAML file from the specified file path and returns the parsed YAML value.
 pub fn read_yaml(file_path: &str) -> Result<serde_yaml::Value, Box<dyn std::error::Error>> {
+    // check if file exists before reading, else return error
+    if !std::path::Path::new(file_path).exists() {
+        return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, format!("File not found: {}", file_path))));
+    }
     let content = fs::read_to_string(file_path)?;
     let yaml: serde_yaml::Value = serde_yaml::from_str(&content)?;
     Ok(yaml)
 }
 
+/// Converts a YAML value to a string representation.
 pub fn yaml_to_string(yaml: &serde_yaml::Value) -> String {
     serde_yaml::to_string(yaml).unwrap()
 }
 
+/// Converts a YAML value to a JSON value.
 pub fn yaml_to_json(yaml_value: &YamlValue) -> Result<JsonValue, Box<dyn Error>> {
     let json_value: JsonValue = serde_json::to_value(yaml_value)?;
-    
     Ok(json_value)
 }
 
+/// Processes a template string using the provided context and returns the rendered result.
 pub fn process_template(template_str: &str, context: &Context) -> Result<String, tera::Error> {
     let mut tera = Tera::default();
     let _ = tera.add_raw_template("process_template", &template_str);
@@ -36,11 +42,11 @@ pub fn process_template(template_str: &str, context: &Context) -> Result<String,
     tera.register_function("env_var", filters::env_var());
     tera.register_filter("filter1", filters::filter1);
     tera.register_filter("filter2", filters::filter2);
-    
+
     tera.render("process_template", &context)
-   
 }
 
+/// Merges two YAML values recursively.
 pub fn merge_yaml(a: &mut YamlValue, b: YamlValue) {
     match (a, b) {
         (YamlValue::Mapping(a_map), YamlValue::Mapping(b_map)) => {
@@ -54,6 +60,7 @@ pub fn merge_yaml(a: &mut YamlValue, b: YamlValue) {
     }
 }
 
+/// Resolves references in a YAML value using a map of reference values.
 fn resolve_references(value: &mut YamlValue, references: &BTreeMap<String, YamlValue>) {
     let re = Regex::new(r"\{\{ ref:([a-zA-Z0-9_]+) \}\}").unwrap();
     match value {
@@ -76,15 +83,16 @@ fn resolve_references(value: &mut YamlValue, references: &BTreeMap<String, YamlV
     }
 }
 
-pub fn process_configuration_files(collections_files: Vec<String>, workplace_files:Vec<String>) -> Result<YamlValue, Box<dyn std::error::Error>> {
-    println!("Processing configuration files...");
+/// Processes configuration files by merging them, resolving references, and rendering templates.
+pub fn process_configuration_files(collections_files: Vec<String>, workplace_files: Vec<String>) -> Result<YamlValue, Box<dyn std::error::Error>> {
+    //println!("Processing configuration files...");
     let file_paths: Vec<String> = collections_files.into_iter().chain(workplace_files).collect();
     let mut merged_yaml = YamlValue::Mapping(Mapping::new());
     let mut references = BTreeMap::new();
 
     for file_path in &file_paths {
+        //println!("Processing file: {}", file_path);
         let yaml: YamlValue = read_yaml(file_path)?;
-        
         merge_yaml(&mut merged_yaml, yaml.clone());
 
         // Collect references if any (this part depends on your reference structure)
@@ -96,7 +104,7 @@ pub fn process_configuration_files(collections_files: Vec<String>, workplace_fil
             }
         }
     }
-    //let context = Context::new();
+
     resolve_references(&mut merged_yaml, &references);
 
     let template_str = yaml_to_string(&merged_yaml);
@@ -104,12 +112,8 @@ pub fn process_configuration_files(collections_files: Vec<String>, workplace_fil
     let context = Context::from_value(json_value).unwrap();
 
     let computed_str = process_template(&template_str, &context);
-    //println!("COMPUTED: {:#?}", computed_str); 
 
     let final_yaml: YamlValue = serde_yaml::from_str(&computed_str.unwrap())?;
 
-    //let merged_yaml_str = serde_yaml::to_string(&final_yaml)?;
-    //println!("MERGED: {}", merged_yaml_str);
-    
     Ok(final_yaml)
 }
