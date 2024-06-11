@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use crate::collections::dx::{azure::cli::AzCli, PlaybookCommand, PlaybookCommandTrait, PlaybookCommandOutput};
+use serde_yaml::Value as YamlValue;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum AzureTasks {
@@ -17,7 +18,7 @@ pub struct AzureLoginVars {
     pub tenant: String
 }
 
-pub type AzureLoginTask = PlaybookCommand<AzureLoginVars>;
+pub type AzureLoginTask = PlaybookCommand<AzureLoginVars, YamlValue>;
 
 impl PlaybookCommandTrait for AzureLoginTask {
     fn execute(&mut self) {
@@ -34,8 +35,8 @@ impl PlaybookCommandTrait for AzureLoginTask {
         }
 
         // add your code here
-        self.output.stdout = format!("Running task: {}", self.command);
-        self.output.stderr = format!("Error while running task: {}", self.command);  
+        self.output.stdout = format!("Running task: {:#?}", self.command);
+        self.output.stderr = format!("Error while running task: {:#?}", self.command);  
         self.output.message = "Success".to_string();
         self.output.status = 1;
         self.output.success = 1;
@@ -50,7 +51,7 @@ impl PlaybookCommandTrait for AzureLoginTask {
     fn display(&self, verbose: Option<String>) {
         let verbose = verbose.unwrap_or("".to_string());
         println!("*** {} *** [e:{}/s:{}/f:{}/s:{}/c:{}] ***", 
-            self.name.as_ref().unwrap_or(&self.command),
+            self.name.as_ref().unwrap_or(&self.command.client_id),
             self.output.status,
             self.output.success,
             self.output.failed,
@@ -59,7 +60,7 @@ impl PlaybookCommandTrait for AzureLoginTask {
         );
         if verbose == "v" {
             println!("Task: {:?}", self);
-            println!("Command: {}", self.command);
+            println!("Command: {}", self.command.client_id);
             println!("   === Output ===");
         }
         if verbose == "vv" {
@@ -78,12 +79,13 @@ impl PlaybookCommandTrait for AzureLoginTask {
     }
 }
 
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct AzureCliVars {
-    pub cmd: String
+    pub resource: YamlValue,
 }
 
-pub type AzureCliTask = PlaybookCommand<AzureCliVars>;
+pub type AzureCliTask = PlaybookCommand<String, AzureCliVars>;
 
 impl PlaybookCommandTrait for AzureCliTask {
     fn execute(&mut self) {

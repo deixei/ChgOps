@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
+use serde_yaml::Value as YamlValue;
 use crate::collections::dx::core::shell::Bash;
 use crate::collections::dx::core::shell::WinCmd;
 use crate::collections::dx::core::shell::ShellTrait;
 use crate::collections::dx::{PlaybookCommand, PlaybookCommandTrait, PlaybookCommandOutput};
-
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum CoreTasks {
@@ -19,15 +19,10 @@ pub enum CoreTasks {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct BashCommandVars {
-    pub cli: String
+    pub resource: YamlValue,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct WinCmdCommandVars {
-    pub cli: String
-}
-
-pub type BashCommandTask = PlaybookCommand<BashCommandVars>;
+pub type BashCommandTask = PlaybookCommand<String, BashCommandVars>;
 
 impl PlaybookCommandTrait for BashCommandTask {
     fn execute(&mut self) {
@@ -90,7 +85,13 @@ impl PlaybookCommandTrait for BashCommandTask {
     }
 }
 
-pub type WinCmdCommandTask = PlaybookCommand<WinCmdCommandVars>;
+#[derive(Debug, Deserialize, Serialize)]
+pub struct WinCmdCommandVars {
+    pub resource: YamlValue,
+}
+
+pub type WinCmdCommandTask = PlaybookCommand<String, WinCmdCommandVars>;
+
 impl PlaybookCommandTrait for WinCmdCommandTask {
     fn execute(&mut self) {
         self.output = PlaybookCommandOutput::new();
@@ -153,9 +154,12 @@ impl PlaybookCommandTrait for WinCmdCommandTask {
     }
 }
 
+pub type PrintCommandTask = PlaybookCommand<String, PrintCommandVars>;
 
-
-pub type PrintCommandTask = PlaybookCommand<String>;
+#[derive(Debug, Deserialize, Serialize)]
+pub struct PrintCommandVars {
+    pub resource: YamlValue,
+}
 
 impl PlaybookCommandTrait for PrintCommandTask {
     fn execute(&mut self) {
@@ -174,7 +178,8 @@ impl PlaybookCommandTrait for PrintCommandTask {
             return;
         }
 
-        self.output.stdout = self.command.clone();
+        self.output.stdout = serde_yaml::to_string(&self.command).unwrap();
+
         self.output.stderr = "".to_string();
         
         self.output.message = "Success".to_string();

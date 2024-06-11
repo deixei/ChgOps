@@ -504,11 +504,13 @@ pub trait PlaybookCommandTrait {
     fn output(&self) -> PlaybookCommandOutput;
 }
 
+
+
 #[derive(Debug, Deserialize, Serialize, Default)]
-pub struct PlaybookCommand<T> {
-    pub command: String,
+pub struct PlaybookCommand<COMMAND, VARS> {
+    pub command: COMMAND,
     pub name: Option<String>,
-    pub vars: Option<T>,
+    pub vars: Option<VARS>,
     pub register: Option<String>,
     pub state: Option<String>,
     pub when: Option<String>,
