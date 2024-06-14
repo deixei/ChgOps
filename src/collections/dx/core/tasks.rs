@@ -154,7 +154,7 @@ impl PlaybookCommandTrait for WinCmdCommandTask {
     }
 }
 
-pub type PrintCommandTask = PlaybookCommand<String, PrintCommandVars>;
+pub type PrintCommandTask = PlaybookCommand<YamlValue, PrintCommandVars>;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct PrintCommandVars {
@@ -208,8 +208,11 @@ impl PlaybookCommandTrait for PrintCommandTask {
 
     fn display(&self, verbose: Option<String>) {
         let verbose = verbose.unwrap_or("".to_string());
+
+        let command_str = serde_yaml::to_string(&self.command).unwrap();
+
         println!("*** {} *** [e:{}/s:{}/f:{}/s:{}/c:{}] ***", 
-            self.name.as_ref().unwrap_or(&self.command),
+            self.name.as_ref().unwrap_or(&command_str),
             self.output.status,
             self.output.success,
             self.output.failed,
@@ -218,7 +221,7 @@ impl PlaybookCommandTrait for PrintCommandTask {
         );
         if verbose == "v" {
             println!("Task: {:?}", self);
-            println!("Command: {}", self.command);
+            println!("Command: {}", command_str);
             println!("   === Output ===");
         }
         if verbose == "vv" {

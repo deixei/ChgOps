@@ -1,31 +1,21 @@
-azure:
-  tags: &tags
-    Owner: rust@deixei.com
-    TechOwner: rust@deixei.com
-    Ecosystem: ECOSYSTEM-NAME
-    Department: MY-DEPARTMENT-CODE
-    OperationalContact: rust@deixei.com
-    CostCenter: '1111111111'
-  blueprint:
-    blueprint2:
-      description: Web app with private endpoint
-      parameters:
-        "$schema": https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#
-        contentVersion: 1.0.0.0
-        parameters:
-          sites_name:
-            value: "{{ self.sites_name }}"
-          serverfarms_asp_externalid:
-            value: "{{ self.serverfarms_asp_externalid }}"
+blueprint2: &blueprint2
+  description: Web app with private endpoint
+  parameters:
+    "$schema": https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#
+    contentVersion: 1.0.0.0
+    parameters:
+      sites_name:
+        value: "{{ self.sites_name }}"
+      serverfarms_asp_externalid:
+        value: "{{ self.serverfarms_asp_externalid }}"
 
-
-      template:
-        "$schema": https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#
-        contentVersion: 1.0.0.0
-        parameters:
-          sites_name:
-            defaultValue: "{{ self.sites_name }}"
-            type: String
-          serverfarms_asp_externalid:
-            defaultValue: "/subscriptions/{{ self.subscription }}/resourceGroups/{{ self.resourceGroup }}/providers/Microsoft.Web/serverfarms/{{ self.sites_name }}-asp"
-            type: String
+  template:
+    "$schema": https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#
+    contentVersion: 1.0.0.0
+    parameters:
+      sites_name:
+        defaultValue: "{{ self.sites_name }}"
+        type: String
+      serverfarms_asp_externalid:
+        defaultValue: "/subscriptions/{{ self.subscription }}/resourceGroups/{{ self.resourceGroup }}/providers/Microsoft.Web/serverfarms/{{ self.sites_name }}-asp"
+        type: String

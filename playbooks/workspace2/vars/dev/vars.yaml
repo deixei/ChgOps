@@ -1,5 +1,4 @@
 #!chgops.vars
----
 self:
   sites_name: "marcio"
   serverfarms_asp_externalid: "marcio"
@@ -16,10 +15,8 @@ vars:
   var2: base on {{ params.param1 }} information
   var3: "{{ dependencies.source }}"
 
-
 bom:
-
-  webapp1: 
+  webapp1:
     parameters:
       parameters:
         sites_name:
@@ -27,10 +24,10 @@ bom:
         serverfarms_asp_externalid:
           value: "demo2"
 
-  webapp2: 
+  webapp2:
     parameters:
       parameters:
         sites_name:
           value: "demo3"
         serverfarms_asp_externalid:
-          value: "demo3"          
+          value: "demo3"

@@ -4,6 +4,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use regex::Regex;
 
+
 pub fn list_all_files_and_dirs(path: String) -> Result<Vec<String>, Box<dyn Error>> {
     let mut files = vec![];
     for entry in fs::read_dir(path)? {
@@ -50,10 +51,46 @@ pub fn sort_files_by_path_length(files: &mut Vec<String>) {
 }
 
 
-pub fn read_file(filename: &str) -> String {
-    let mut f = File::open(filename).unwrap();
-    let mut s = String::new();
-    f.read_to_string(&mut s).unwrap();
+pub fn read_file(file_path: &str) -> Result<String, Box<dyn std::error::Error>> {
+    if !std::path::Path::new(file_path).exists() {
+        return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, format!("File not found: {}", file_path))));
+    }
+    let s = std::fs::read_to_string(file_path)?;
+    Ok(s)
+}
 
-    s
+pub fn write_file(file_path: &str, content: &String) -> Result<(), Box<dyn std::error::Error>> {
+    let mut file = File::create(file_path)?;
+    file.write_all(content.as_bytes())?;
+    Ok(())
+}
+
+pub fn append_file(file_path: &str, content: &String) -> Result<(), Box<dyn std::error::Error>> {
+    let mut file = fs::OpenOptions::new().append(true).open(file_path)?;
+    file.write_all(content.as_bytes())?;
+    Ok(())
+}
+
+
+pub fn join_files(files: Vec<String>) -> Result<String, Box<dyn Error>> {
+    let mut content = String::new();
+    for file in files {
+        content.push_str(&read_file(&file)?);
+    }
+    Ok(content)
+}
+
+pub fn copy_file(src: &str, dest: &str) -> Result<(), Box<dyn Error>> {
+    fs::copy(src, dest)?;
+    Ok(())
+}
+
+pub fn join_files_into(files: Vec<String>, separator: &str, dest: &str) -> Result<(), Box<dyn Error>> {
+    let mut content = String::new();
+    for file in files {
+        content.push_str(&read_file(&file)?);
+        content.push_str(separator);
+    }
+    write_file(dest, &content)?;
+    Ok(())
 }

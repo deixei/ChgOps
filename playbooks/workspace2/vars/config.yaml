@@ -6,14 +6,13 @@ dependencies:
     - name: dx.azure
       version: 1.0.0
 
-azure:
-  tags:
-    Owner: demo@deixei.com
-    TechOwner: demo@deixei.com
-    Ecosystem: MY-DEMO
-    Department: MY-DEPARTMENT-123
-    OperationalContact: demo@deixei.com
-    CostCenter: '22222222'
+mytags: &mytags
+  Owner: demo@deixei.com
+  TechOwner: demo@deixei.com
+  Ecosystem: MY-DEMO
+  Department: MY-DEPARTMENT-123
+  OperationalContact: demo@deixei.com
+  CostCenter: '22222222'
 
 params:
   param1: this is a from config.yaml

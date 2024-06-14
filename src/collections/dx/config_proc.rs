@@ -10,28 +10,71 @@ use tera::{Tera, Context};
 use std::collections::BTreeMap;
 use regex::Regex;
 
-use super::core::filters;
+use super::{core::filters, files_and_dirs};
+use std::path::Path;
+
 
 /// Reads a YAML file from the specified file path and returns the parsed YAML value.
-pub fn read_yaml(file_path: &str) -> Result<serde_yaml::Value, Box<dyn std::error::Error>> {
-    // check if file exists before reading, else return error
-    if !std::path::Path::new(file_path).exists() {
-        return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, format!("File not found: {}", file_path))));
+pub fn read_yaml(file_path: &str) -> Result<serde_yaml::Value, Box<dyn Error>> {
+    // Check if the file exists before attempting to read it
+    if !Path::new(file_path).exists() {
+        return Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            format!("File not found: {}", file_path),
+        )));
     }
+
+    // Read the file content to a string
     let content = fs::read_to_string(file_path)?;
-    let yaml: serde_yaml::Value = serde_yaml::from_str(&content)?;
-    Ok(yaml)
+
+    // Try to parse the string content as YAML
+    match serde_yaml::from_str(&content) {
+        Ok(yaml) => Ok(yaml),
+        Err(e) => {
+            // If there's an error, gather details about where the error occurred
+            if let Some(location) = e.location() {
+                let line = location.line() + 1;
+                let column = location.column() + 1;
+                let snippet = content.lines().nth(location.line()).unwrap_or("");
+                let message = format!(
+                    "ERROR: Reading and deserializing YAML file: {} at line {} column {}: {:#?} - [{:#?}]",
+                    file_path, line, column, snippet, e
+                );
+                Err(Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, message)))
+            } else {
+                // If there's no specific location, return a generic error message
+                let message = format!("ERROR: Reading and deserializing YAML file: {} - [{}]", file_path, e);
+                Err(Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, message)))
+            }
+        }
+    }
 }
 
+
+
 /// Converts a YAML value to a string representation.
-pub fn yaml_to_string(yaml: &serde_yaml::Value) -> String {
-    serde_yaml::to_string(yaml).unwrap()
+pub fn yaml_to_string(yaml: &serde_yaml::Value) -> Result<String, Box<dyn Error>> {
+    // handle errors
+    match serde_yaml::to_string(yaml) {
+        Ok(s) => Ok(s),
+        Err(e) => {
+            let message = format!("ERROR: Converting YAML to string: {}", e);
+            Err(Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, message)))
+        }
+    }
+
 }
 
 /// Converts a YAML value to a JSON value.
 pub fn yaml_to_json(yaml_value: &YamlValue) -> Result<JsonValue, Box<dyn Error>> {
-    let json_value: JsonValue = serde_json::to_value(yaml_value)?;
-    Ok(json_value)
+    match serde_json::to_value(yaml_value) {
+        Ok(j) => Ok(j),
+        Err(e) => {
+            let message = format!("ERROR: Converting YAML to JSON: {}", e);
+            Err(Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, message)))
+        }
+        
+    }
 }
 
 /// Processes a template string using the provided context and returns the rendered result.
@@ -87,11 +130,20 @@ fn resolve_references(value: &mut YamlValue, references: &BTreeMap<String, YamlV
 pub fn process_configuration_files(collections_files: Vec<String>, workplace_files: Vec<String>) -> Result<YamlValue, Box<dyn std::error::Error>> {
     //println!("Processing configuration files...");
     let file_paths: Vec<String> = collections_files.into_iter().chain(workplace_files).collect();
+
+    let _m = files_and_dirs::join_files_into(file_paths.clone(), "\n", "/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/merged.yaml")?;
+    let _y: YamlValue = read_yaml("/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/merged.yaml")?;
+    let _t = yaml_to_string(&_y).unwrap_or("".to_string());
+    let _j: JsonValue = yaml_to_json(&_y)?;
+    let _c = Context::from_value(_j)?;
+    let _r = process_template(&_t, &_c)?;
+    let _o = files_and_dirs::write_file("/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/final.yaml", &_r)?;
+    
     let mut merged_yaml = YamlValue::Mapping(Mapping::new());
     let mut references = BTreeMap::new();
 
     for file_path in &file_paths {
-        //println!("Processing file: {}", file_path);
+        println!("Processing file: {}", file_path);
         let yaml: YamlValue = read_yaml(file_path)?;
         merge_yaml(&mut merged_yaml, yaml.clone());
 
@@ -105,9 +157,9 @@ pub fn process_configuration_files(collections_files: Vec<String>, workplace_fil
         }
     }
 
-    resolve_references(&mut merged_yaml, &references);
+    //resolve_references(&mut merged_yaml, &references);
 
-    let template_str = yaml_to_string(&merged_yaml);
+    let template_str = yaml_to_string(&merged_yaml).unwrap_or("".to_string());
     let json_value: JsonValue = yaml_to_json(&merged_yaml).unwrap();
     let context = Context::from_value(json_value).unwrap();
 

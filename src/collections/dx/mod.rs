@@ -193,21 +193,21 @@ impl ChgOpsWorkspace {
             }
         };
 
-        let playbook_full_path = self.playbook_full_path();
-        let playbook_yaml_data = config_proc::read_yaml(&playbook_full_path);
+        // let playbook_full_path = self.playbook_full_path();
+        // let playbook_yaml_data = config_proc::read_yaml(&playbook_full_path);
 
-        config_proc::merge_yaml(&mut facts, playbook_yaml_data.unwrap());
-        let template_str: String = config_proc::yaml_to_string(&facts);
-        let json_value: serde_json::Value = config_proc::yaml_to_json(&facts).unwrap();
-        let context = Context::from_value(json_value).unwrap();
+        // config_proc::merge_yaml(&mut facts, playbook_yaml_data.unwrap());
+        // let template_str: String = config_proc::yaml_to_string(&facts);
+        // let json_value: serde_json::Value = config_proc::yaml_to_json(&facts).unwrap();
+        // let context = Context::from_value(json_value).unwrap();
     
 
-        self.active_playbook_document = config_proc::process_template(&template_str, &context).expect("Failed to process template");
+        // self.active_playbook_document = config_proc::process_template(&template_str, &context).expect("Failed to process template");
 
-        println!("active_playbook_document: {:?}", &self.active_playbook_document);
+        // println!("active_playbook_document: {:?}", &self.active_playbook_document);
 
-        self.playbook = serde_yaml::from_str(&self.active_playbook_document)
-            .expect("Failed to parse playbook");
+        // self.playbook = serde_yaml::from_str(&self.active_playbook_document)
+        //     .expect("Failed to parse playbook");
     }
 
     pub fn run_playbook(&mut self) {
