@@ -19,3 +19,12 @@ blueprint2: &blueprint2
       serverfarms_asp_externalid:
         defaultValue: "/subscriptions/{{ self.subscription }}/resourceGroups/{{ self.resourceGroup }}/providers/Microsoft.Web/serverfarms/{{ self.sites_name }}-asp"
         type: String
+
+
+
+
+dict:
+    <<: *ref
+    top_key: given
+    merged_key: given
+    l: *l    

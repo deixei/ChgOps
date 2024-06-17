@@ -4,11 +4,10 @@ use serde_json;
 use serde_yaml::Value as YamlValue;
 use serde_json::Value as JsonValue;
 use std::error::Error;
-
 use std::fs;
 use tera::{Tera, Context};
 use std::collections::BTreeMap;
-use regex::Regex;
+use crate::collections::dx::yaml_handler;
 
 use super::{core::filters, files_and_dirs};
 use std::path::Path;
@@ -103,69 +102,58 @@ pub fn merge_yaml(a: &mut YamlValue, b: YamlValue) {
     }
 }
 
-/// Resolves references in a YAML value using a map of reference values.
-fn resolve_references(value: &mut YamlValue, references: &BTreeMap<String, YamlValue>) {
-    let re = Regex::new(r"\{\{ ref:([a-zA-Z0-9_]+) \}\}").unwrap();
-    match value {
-        YamlValue::String(s) => {
-            *s = re.replace_all(s, |caps: &regex::Captures| {
-                references.get(&caps[1]).unwrap_or(&YamlValue::Null).as_str().unwrap_or("").to_string()
-            }).to_string();
-        }
-        YamlValue::Mapping(map) => {
-            for val1 in map.iter_mut() {
-                resolve_references(val1.1, references);
-            }
-        }
-        YamlValue::Sequence(seq) => {
-            for val in seq.iter_mut() {
-                resolve_references(val, references);
-            }
-        }
-        _ => {}
-    }
-}
+// /// Resolves references in a YAML value using a map of reference values.
+// fn resolve_references(value: &mut YamlValue, references: &BTreeMap<String, YamlValue>) {
+//     let re = Regex::new(r"\{\{ ref:([a-zA-Z0-9_]+) \}\}").unwrap();
+//     match value {
+//         YamlValue::String(s) => {
+//             *s = re.replace_all(s, |caps: &regex::Captures| {
+//                 references.get(&caps[1]).unwrap_or(&YamlValue::Null).as_str().unwrap_or("").to_string()
+//             }).to_string();
+//         }
+//         YamlValue::Mapping(map) => {
+//             for val1 in map.iter_mut() {
+//                 resolve_references(val1.1, references);
+//             }
+//         }
+//         YamlValue::Sequence(seq) => {
+//             for val in seq.iter_mut() {
+//                 resolve_references(val, references);
+//             }
+//         }
+//         _ => {}
+//     }
+// }
+use yaml_merge_keys::merge_keys;
+use yaml_rust2::YamlEmitter;
 
 /// Processes configuration files by merging them, resolving references, and rendering templates.
-pub fn process_configuration_files(collections_files: Vec<String>, workplace_files: Vec<String>) -> Result<YamlValue, Box<dyn std::error::Error>> {
+pub fn process_configuration_files(collections_files: Vec<String>, workplace_files: Vec<String>) -> Result<yaml_rust2::Yaml, Box<dyn std::error::Error>> {
     //println!("Processing configuration files...");
     let file_paths: Vec<String> = collections_files.into_iter().chain(workplace_files).collect();
+    let mut yaml: yaml_rust2::Yaml = yaml_rust2::Yaml::Null;
+    yaml = yaml_handler::load(file_paths, "/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/merged.yaml")?;
 
-    let _m = files_and_dirs::join_files_into(file_paths.clone(), "\n", "/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/merged.yaml")?;
-    let _y: YamlValue = read_yaml("/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/merged.yaml")?;
-    let _t = yaml_to_string(&_y).unwrap_or("".to_string());
-    let _j: JsonValue = yaml_to_json(&_y)?;
-    let _c = Context::from_value(_j)?;
+    let file_data = files_and_dirs::read_file("/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/merged.yaml")?;
+
+    println!("{}", file_data);    
+
+    let _t = file_data;
+    let json: JsonValue = yaml_handler::yaml_to_json(&yaml)?;
+    let _c = Context::from_value(json)?;
+
     let _r = process_template(&_t, &_c)?;
     let _o = files_and_dirs::write_file("/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/final.yaml", &_r)?;
-    
-    let mut merged_yaml = YamlValue::Mapping(Mapping::new());
-    let mut references = BTreeMap::new();
 
-    for file_path in &file_paths {
-        println!("Processing file: {}", file_path);
-        let yaml: YamlValue = read_yaml(file_path)?;
-        merge_yaml(&mut merged_yaml, yaml.clone());
+    let merged_yaml = yaml_handler::load_yaml(&_r)?;
 
-        // Collect references if any (this part depends on your reference structure)
-        if let YamlValue::Mapping(map) = &yaml {
-            for (k, v) in map {
-                if let YamlValue::String(s) = k {
-                    references.insert(s.clone(), v.clone());
-                }
-            }
-        }
-    }
+    //let template_str = yaml_to_string(&merged_yaml).unwrap_or("".to_string());
+    //let json_value: JsonValue = yaml_to_json(&merged_yaml).unwrap();
+    //let context = Context::from_value(json_value).unwrap();
 
-    //resolve_references(&mut merged_yaml, &references);
+    //let computed_str = process_template(&template_str, &context);
 
-    let template_str = yaml_to_string(&merged_yaml).unwrap_or("".to_string());
-    let json_value: JsonValue = yaml_to_json(&merged_yaml).unwrap();
-    let context = Context::from_value(json_value).unwrap();
+    //let final_yaml: YamlValue = serde_yaml::from_str(&computed_str.unwrap())?;
 
-    let computed_str = process_template(&template_str, &context);
-
-    let final_yaml: YamlValue = serde_yaml::from_str(&computed_str.unwrap())?;
-
-    Ok(final_yaml)
+    Ok(merged_yaml)
 }

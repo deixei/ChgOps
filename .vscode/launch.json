@@ -25,6 +25,24 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Debug chgops test",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=chgops",
+                    "--package=chgops"
+                ],
+                "filter": {
+                    "name": "chgops",
+                    "kind": "bin"
+                }
+            },
+            "args": ["test", "--scope","demo"],
+            "cwd": "${workspaceFolder}"
+        },        
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug unit tests in executable 'chgops'",
             "cargo": {
                 "args": [

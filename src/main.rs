@@ -1,4 +1,5 @@
 use clap::{Command, Arg};
+use collections::dx::yaml_handler;
 pub mod collections;
 use crate::collections::dx::WORKSPACE;
 
@@ -139,10 +140,9 @@ fn main() {
             );
         }
         Some(("test", sub_matches)) => {
-            println!(
-                "Testing with scope: {}",
-                sub_matches.get_one::<String>("scope").expect("required")
-            );
+            let scope = sub_matches.get_one::<String>("scope").expect("required");
+            println!("Testing with scope: {}", scope);
+            let _ = yaml_handler::example();
         }
         Some(("publish", sub_matches)) => {
             println!(

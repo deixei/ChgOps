@@ -155,12 +155,14 @@ dependencies = [
  "chrono",
  "chrono-humanize",
  "clap",
+ "hashlink",
  "lazy_static",
  "regex",
  "serde",
  "serde_json",
  "serde_yaml",
  "tera",
+ "yaml-merge-keys",
  "yaml-rust2",
 ]
 
@@ -1083,6 +1085,17 @@ name = "windows_x86_64_msvc"
 version = "0.52.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bec47e5bfd1bff0eeaf6d8b485cc1074891a197ab4225d504cb7a1ab88b02bf0"
+
+[[package]]
+name = "yaml-merge-keys"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "53da7050df0d0276622e2e013cc966338d0be026e15c3ae40db1e2d034ac8ef8"
+dependencies = [
+ "lazy_static",
+ "thiserror",
+ "yaml-rust2",
+]
 
 [[package]]
 name = "yaml-rust"

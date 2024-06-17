@@ -53,6 +53,7 @@ caf:
         - name: "mgmt2"
         - name: "mgmt3"
 
+
 blueprint1: &blueprint1
   description: Web app with private endpoint
   parameters:
@@ -76,6 +77,19 @@ blueprint1: &blueprint1
         type: String
       tags: *tags
 
+ref: &ref
+    merged_key: merged
+    added_key: merged
+l: &l
+    - name: a
+      value: 2
+    - name: b
+      value: 3
+    - name: c
+      value: 4
+name: &name 
+    description: marcio        
+
 blueprint2: &blueprint2
   description: Web app with private endpoint
   parameters:
@@ -97,6 +111,16 @@ blueprint2: &blueprint2
       serverfarms_asp_externalid:
         defaultValue: "/subscriptions/{{ self.subscription }}/resourceGroups/{{ self.resourceGroup }}/providers/Microsoft.Web/serverfarms/{{ self.sites_name }}-asp"
         type: String
+
+
+
+
+dict:
+    <<: *ref
+    top_key: given
+    merged_key: given
+    l: *l    
+
 #!chgops.config
 # Description: This is the configuration file for the workspace.
 dependencies:
@@ -125,6 +149,7 @@ vars:
     This is a large string
     that spans multiple lines
   math1: "{{ 1 + 1 }}"
+
 #!chgops.vars
 self:
   sites_name: "marcio"
@@ -158,3 +183,4 @@ bom:
           value: "demo3"
         serverfarms_asp_externalid:
           value: "demo3"
+

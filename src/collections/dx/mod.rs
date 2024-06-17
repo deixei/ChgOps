@@ -1,5 +1,6 @@
 pub mod files_and_dirs;
 pub mod config_proc;
+pub mod yaml_handler;
 pub mod core;
 pub mod azure;
 use serde::{Deserialize, Serialize};
@@ -14,8 +15,6 @@ use yaml_rust2::{YamlLoader, Yaml};
 use std::fs::File;
 use std::io::prelude::*;
 use serde_yaml::Mapping;
-use tera::Context;
-
 
 
 pub fn open_yaml(filename: &str) -> Vec<Yaml> {
@@ -177,37 +176,19 @@ impl ChgOpsWorkspace {
         }
 
         //println!("list_of_files_in_workspace: {:#?}", list_of_files_in_workspace);
-        
-        let mut facts = serde_yaml::Value::Mapping(Mapping::new());
 
         let proc = config_proc::process_configuration_files(
             list_of_files_in_collection, 
             list_of_files_in_workspace);
         match proc {
             Ok(data) => {
-                //println!("Facts: {:#?}", data);
-                facts = data;
+                println!("Facts: {:#?}", data);
             },
             Err(err) => {
                 eprintln!("ERROR: processing configuration files: {}", err);
             }
         };
 
-        // let playbook_full_path = self.playbook_full_path();
-        // let playbook_yaml_data = config_proc::read_yaml(&playbook_full_path);
-
-        // config_proc::merge_yaml(&mut facts, playbook_yaml_data.unwrap());
-        // let template_str: String = config_proc::yaml_to_string(&facts);
-        // let json_value: serde_json::Value = config_proc::yaml_to_json(&facts).unwrap();
-        // let context = Context::from_value(json_value).unwrap();
-    
-
-        // self.active_playbook_document = config_proc::process_template(&template_str, &context).expect("Failed to process template");
-
-        // println!("active_playbook_document: {:?}", &self.active_playbook_document);
-
-        // self.playbook = serde_yaml::from_str(&self.active_playbook_document)
-        //     .expect("Failed to parse playbook");
     }
 
     pub fn run_playbook(&mut self) {
