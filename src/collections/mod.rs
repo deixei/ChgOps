@@ -17,3 +17,35 @@ pub fn print_verbose(verbose: Verbose) {
         Verbose::VVV => println!("Maximum verbosity"),
     }
 }
+
+#[macro_export]
+macro_rules! print_error {
+    ($($arg:tt)*) => ({
+        use colored::*;
+        eprintln!("{} {}", "ERROR:".red(), format!($($arg)*));
+    });
+}
+
+#[macro_export]
+macro_rules! print_warning {
+    ($($arg:tt)*) => ({
+        use colored::*;
+        eprintln!("{} {}", "WARNING:".yellow(), format!($($arg)*));
+    });
+}
+
+#[macro_export]
+macro_rules! print_info {
+    ($($arg:tt)*) => ({
+        use colored::*;
+        println!("{} {}", "INFO:".blue(), format!($($arg)*));
+    });
+}
+
+#[macro_export]
+macro_rules! print_success {
+    ($($arg:tt)*) => ({
+        use colored::*;
+        println!("{} {}", "SUCCESS:".green(), format!($($arg)*));
+    });
+}

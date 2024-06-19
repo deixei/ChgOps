@@ -9,12 +9,11 @@ use chrono_humanize::HumanTime;
 use std::sync::Mutex;
 use lazy_static::lazy_static;
 use std::env;
-use serde_yaml;
 use std::collections::HashMap;
 use yaml_rust2::{YamlLoader, Yaml};
 use std::fs::File;
 use std::io::prelude::*;
-use serde_yaml::Mapping;
+
 
 
 pub fn open_yaml(filename: &str) -> Vec<Yaml> {
@@ -182,7 +181,7 @@ impl ChgOpsWorkspace {
             list_of_files_in_workspace);
         match proc {
             Ok(data) => {
-                println!("Facts: {:#?}", data);
+                println!("Facts are set to be used");
             },
             Err(err) => {
                 eprintln!("ERROR: processing configuration files: {}", err);

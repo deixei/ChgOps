@@ -5,18 +5,12 @@ self:
   subscription: "marcio"
   resourceGroup: "marcio"
 
-params:
-  param1: &param1 this is a input parameter in vars.yaml
-  param2: "{{ dependencies.source | filter1 }}"
-
 vars:
   var1: this is a string variable
-  var4: *param1
-  var2: base on {{ params.param1 }} information
   var3: "{{ dependencies.source }}"
 
 bom:
-  webapp1:
+  webapp1: 
     parameters:
       parameters:
         sites_name:

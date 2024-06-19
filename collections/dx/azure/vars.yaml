@@ -16,7 +16,7 @@ common_vars:
     url: "http://localhost:8080"
     ado_organization: "deixeicom"
 
-tags: &tags
+tags:
   Owner: rust@deixei.com
   TechOwner: rust@deixei.com
   Ecosystem: ECOSYSTEM-NAME

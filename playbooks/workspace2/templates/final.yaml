@@ -42,7 +42,7 @@ common_vars:
     url: "http://localhost:8080"
     ado_organization: deixeicom
 tags:
-  Owner: rust@deixei.com
+  Owner: b1
   TechOwner: rust@deixei.com
   Ecosystem: ECOSYSTEM-NAME
   Department: MY-DEPARTMENT-CODE
@@ -61,18 +61,25 @@ resource_types:
   - resource_groups
   - storage_accounts
 providers:
-  - namespace: Astronomer.Astro
-  - namespace: Dynatrace.Observability
-  - namespace: Microsoft.Billing
+  -
+    namespace: Astronomer.Astro
+  -
+    namespace: Dynatrace.Observability
+  -
+    namespace: Microsoft.Billing
 caf:
   default_location: West Europe
   default_pair_location: North Europe
   mgmt_group:
-    - name: top
+    -
+      name: top
       children:
-        - name: mgmt1
-        - name: mgmt2
-        - name: mgmt3
+        -
+          name: mgmt1
+        -
+          name: mgmt2
+        -
+          name: mgmt3
 blueprint1:
   description: Web app with private endpoint
   parameters:
@@ -93,25 +100,24 @@ blueprint1:
       serverfarms_asp_externalid:
         defaultValue: "/subscriptions/marcio/resourceGroups/marcio/providers/Microsoft.Web/serverfarms/marcio-asp"
         type: String
-      tags:
-        Owner: rust@deixei.com
-        TechOwner: rust@deixei.com
-        Ecosystem: ECOSYSTEM-NAME
-        Department: MY-DEPARTMENT-CODE
-        OperationalContact: rust@deixei.com
-        CostCenter: "1111111111"
+      tags: "[object]"
 ref:
   merged_key: merged
   added_key: merged
 l:
-  - name: a
+  -
+    name: a
     value: 2
-  - name: b
+  -
+    name: b
     value: 3
-  - name: c
+  -
+    name: c
     value: 4
 name:
   description: marcio
+  merged_key: merged
+  added_key: merged
 blueprint2:
   description: Web app with private endpoint
   parameters:
@@ -133,22 +139,13 @@ blueprint2:
         defaultValue: "/subscriptions/marcio/resourceGroups/marcio/providers/Microsoft.Web/serverfarms/marcio-asp"
         type: String
 dict:
-  "<<":
-    merged_key: merged
-    added_key: merged
   top_key: given
   merged_key: given
-  l:
-    - name: a
-      value: 2
-    - name: b
-      value: 3
-    - name: c
-      value: 4
 dependencies:
   source: "https://deixei.azure.com"
   collections:
-    - name: dx.azure
+    -
+      name: dx.azure
       version: 1.0.0
 mytags:
   Owner: demo@deixei.com
@@ -158,18 +155,16 @@ mytags:
   OperationalContact: demo@deixei.com
   CostCenter: "22222222"
 params:
-  param1: this is a input parameter in vars.yaml
-  param2: "https://deixei.azure.com"
-vars:
-  var1: this is a string variable
-  var4: this is a input parameter in vars.yaml
-  var2: "base on this is a input parameter in vars.yaml information"
-  var3: "https://deixei.azure.com"
+  time: "2024-06-19T06:32:02.681193675Z"
+  client_id: "209badfd-aca6-4348-8993-c233768a3666"
 self:
   sites_name: marcio
   serverfarms_asp_externalid: marcio
   subscription: marcio
   resourceGroup: marcio
+vars:
+  var1: this is a string variable
+  var3: "https://deixei.azure.com"
 bom:
   webapp1:
     parameters:

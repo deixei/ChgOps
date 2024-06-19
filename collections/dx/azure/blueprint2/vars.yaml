@@ -20,11 +20,6 @@ blueprint2: &blueprint2
         defaultValue: "/subscriptions/{{ self.subscription }}/resourceGroups/{{ self.resourceGroup }}/providers/Microsoft.Web/serverfarms/{{ self.sites_name }}-asp"
         type: String
 
-
-
-
 dict:
-    <<: *ref
-    top_key: given
-    merged_key: given
-    l: *l    
+  top_key: given
+  merged_key: given

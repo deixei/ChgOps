@@ -2,6 +2,8 @@ use yaml_rust2::{Yaml, YamlLoader, YamlEmitter};
 use std::error::Error;
 use std::fmt;
 use yaml_merge_keys::merge_keys;
+use serde_yaml;
+use serde_json;
 
 // Define a custom error type for better error handling
 #[derive(Debug)]
@@ -50,9 +52,32 @@ fn get_error_snippet(yaml_content: &str, line: usize, col: usize) -> String {
     snippet.join("\n")
 }
 
+pub fn combine_yaml(a: &mut Yaml, b: Yaml) {
+    match (a, b) {
+        (Yaml::Hash(a), Yaml::Hash(b)) => {
+            for (key, value) in b.iter() {
+                if a.contains_key(key) {
+                    let a_val = a.get_mut(key).unwrap();
+                    combine_yaml(a_val, value.clone());
+                } else {
+                    a.insert(key.clone(), value.clone());
+                }
+            }
+        },
+        (a_val, b_val) => {
+            *a_val = b_val.clone();
+        }
+    }
+}
+
 pub fn load_yaml(yaml_str: &str) -> Result<Yaml, YamlMergeError> {
-    let yamls = YamlLoader::load_from_str(yaml_str).map_err(|err| YamlMergeError::from((err, yaml_str.to_string())));
-    join_yaml(yamls.unwrap())
+    let yaml = YamlLoader::load_from_str(&yaml_str).map_err(|err| YamlMergeError::from((err, yaml_str.to_string())));
+    match yaml {
+        Ok(yaml) => {
+            Ok(join_yaml(yaml)?)
+        },
+        Err(e) => Err(e),
+    }
 }
 
 
@@ -93,17 +118,8 @@ x:
 
     match load_yaml(&raw_yaml) {
         Ok(documents) => {
-            // Merge the keys.
-            for doc in documents {
-                let merged_yaml = merge_keys(doc.clone()).unwrap();
-                let mut out_str = String::new();
-                {
-                    let mut emitter = YamlEmitter::new(&mut out_str);
-                    emitter.dump(&merged_yaml).unwrap(); // dump the YAML object to a String
-                    //emitter.dump(&doc).unwrap(); 
-                }
-                println!("{}", out_str);
-            }
+            let out_str = yaml_to_string_pretty(&documents)?;
+            println!("{}", out_str);
         },
         Err(e) => {
             eprintln!("Error: {}", e);
@@ -126,15 +142,23 @@ pub fn yaml_to_string(yaml: &Yaml) -> Result<String, Box<dyn std::error::Error>>
 pub fn yaml_to_string_pretty(yaml: &Yaml) -> Result<String, Box<dyn std::error::Error>> {
     let mut out_str = String::new();
     let mut emitter = YamlEmitter::new(&mut out_str) ;
+    emitter.compact(false);
     emitter.multiline_strings(true);
     emitter.dump(yaml)?;
     Ok(out_str)
 }
 
-// convert yaml_rust2::yaml to serde_json::Value
-pub fn yaml_to_json(yaml: &Yaml) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
-    let json = serde_json::to_value(&yaml.as_str())?;
-    Ok(json)
+// convert yaml string to serde_json::Value
+pub fn yaml_to_json(yaml_str: &str) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    let yaml_value: serde_yaml::Value = serde_yaml::from_str(yaml_str).unwrap();
+
+    match serde_json::to_value(yaml_value){
+        Ok(json) => Ok(json),
+        Err(e) => {
+            let message = format!("ERROR: Converting YAML to JSON: {}", e);
+            Err(Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, message)))
+        }        
+    }
 }
 
 // join Vec<Yaml> into a single Yaml object
@@ -152,11 +176,16 @@ pub fn load(files: Vec<String>, destination: &str) -> Result<Yaml, Box<dyn std::
     let mut merged_yaml = Yaml::Null;
     for file in files {
         let file_data = files_and_dirs::read_file(&file)?;
-        let yamls = YamlLoader::load_from_str(&file_data)?;
-        let yaml = join_yaml(yamls)?;
-        merged_yaml = merge_keys(yaml).unwrap();
+        match load_yaml(&file_data) {
+            Ok(documents) => {
+                combine_yaml(&mut merged_yaml, merge_keys(documents).unwrap());
+            },
+            Err(e) => {
+                eprintln!("Error: {} \n File: {}", e, file);
+            }
+        }
     }
-    let out_str = yaml_to_string(&merged_yaml).unwrap_or("".to_string());
+    let out_str = yaml_to_string_pretty(&merged_yaml).unwrap_or("".to_string());
     let _ = files_and_dirs::write_file(destination, &out_str)?;
 
     Ok(merged_yaml)
