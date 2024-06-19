@@ -49,3 +49,12 @@ macro_rules! print_success {
         println!("{} {}", "SUCCESS:".green(), format!($($arg)*));
     });
 }
+
+
+#[macro_export]
+macro_rules! print_banner_yellow {
+    ($($arg:tt)*) => ({
+        use colored::*;
+        println!("{}", format!($($arg)*).yellow());
+    });
+}

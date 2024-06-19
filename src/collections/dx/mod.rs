@@ -14,7 +14,7 @@ use yaml_rust2::{YamlLoader, Yaml};
 use std::fs::File;
 use std::io::prelude::*;
 
-
+use crate::{print_banner_yellow, print_info, print_success, print_warning};
 
 pub fn open_yaml(filename: &str) -> Vec<Yaml> {
     let mut f = File::open(filename).unwrap();
@@ -182,6 +182,8 @@ impl ChgOpsWorkspace {
         match proc {
             Ok(data) => {
                 println!("Facts are set to be used");
+                // we can now process the playbook
+
             },
             Err(err) => {
                 eprintln!("ERROR: processing configuration files: {}", err);
@@ -209,7 +211,7 @@ impl ChgOpsWorkspace {
     }
 
     pub fn start_banner(&mut self) {
-        println!("ChgOps - Change management and operations tool");
+        print_banner_yellow!("ChgOps - Change management and operations tool");
 
         println!("Engine Parameters ###########################");
 
