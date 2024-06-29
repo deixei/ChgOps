@@ -4,16 +4,25 @@
 name: playbook-when
 settings:
   name: "workspace2-when"
-
+self:
+  sites_name: "my_playbook"
+mytags:
+  ad1: marcio@deixei.com
 tasks:
   - dx.core.print:
       command: 
-        resource: "{{ azure.tags.Owner }}"
+        resource: "{{ mytags | as_base64 }}"
       name: "Ecosystem"
       register: eco1
 
   - dx.core.print:
       command: 
-        resource: "{{ azure.tags }}"
+        resource: "{{ mytags | as_json }}"
       name: "Tags"
       register: tg1
+
+  - dx.core.print:
+      command: 
+        resource: "{{ mytags }}"
+      name: "Tags as object"
+      register: tg2

@@ -32,13 +32,13 @@ pub fn read_yaml(file_path: &str) -> Result<serde_yaml::Value, Box<dyn Error>> {
                 let column = location.column() + 1;
                 let snippet = content.lines().nth(location.line()).unwrap_or("");
                 let message = format!(
-                    "ERROR: Reading and deserializing YAML file: {} at line {} column {}: {:#?} - [{:#?}]",
+                    "Reading and deserializing YAML file: {} at line {} column {}: {:#?} - [{:#?}]",
                     file_path, line, column, snippet, e
                 );
                 Err(Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, message)))
             } else {
                 // If there's no specific location, return a generic error message
-                let message = format!("ERROR: Reading and deserializing YAML file: {} - [{}]", file_path, e);
+                let message = format!("Reading and deserializing YAML file: {} - [{}]", file_path, e);
                 Err(Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, message)))
             }
         }
@@ -53,7 +53,7 @@ pub fn yaml_to_string(yaml: &serde_yaml::Value) -> Result<String, Box<dyn Error>
     match serde_yaml::to_string(yaml) {
         Ok(s) => Ok(s),
         Err(e) => {
-            let message = format!("ERROR: Converting YAML to string: {}", e);
+            let message = format!("Converting YAML to string: {}", e);
             Err(Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, message)))
         }
     }
@@ -66,10 +66,14 @@ pub fn yaml_to_string(yaml: &serde_yaml::Value) -> Result<String, Box<dyn Error>
 pub fn process_template(template_str: &str, context: &Context) -> Result<String, tera::Error> {
     let mut tera = Tera::default();
     let _ = tera.add_raw_template("process_template", &template_str);
+
     tera.register_function("current_time", filters::current_time());
     tera.register_function("env_var", filters::env_var());
     tera.register_filter("filter1", filters::filter1);
     tera.register_filter("filter2", filters::filter2);
+    tera.register_filter("as_yaml", filters::as_yaml);
+    tera.register_filter("as_json", filters::as_json);
+    tera.register_filter("as_base64", filters::as_base64);
 
     match tera.render("process_template", &context) {
         Ok(rendered) => {
@@ -78,7 +82,7 @@ pub fn process_template(template_str: &str, context: &Context) -> Result<String,
         },
         Err(e) => {
             let error : tera::Error = e;
-            print_error!("Error rendering template: {}", error);
+            print_error!("Rendering template: {:#?}", error);
             // Handle the error
             Err(error)
         }
@@ -109,8 +113,9 @@ pub fn process_configuration_files(collections_files: Vec<String>, workplace_fil
     let file_data = files_and_dirs::read_file("/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/merged.yaml")?;
     let json: JsonValue = yaml_handler::yaml_to_json(&file_data).unwrap();
     //println!("JSON: {:#?}", json);
-    let tera_context = Context::from_value(json)?;
-    //println!("tera_context: {:#?}", tera_context);
+    //let tera_context = Context::from_value(json)?;
+    let tera_context = Context::from_serialize(json)?;
+    println!("tera_context: {:#?}", tera_context);
     //println!("file_data: {:#?}", file_data);
     let _r = process_template(&file_data, &tera_context)?;
     let _o = files_and_dirs::write_file("/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/final.yaml", &_r)?;
@@ -118,4 +123,30 @@ pub fn process_configuration_files(collections_files: Vec<String>, workplace_fil
     let merged_yaml = yaml_handler::load_yaml(&_r)?;
 
     Ok(merged_yaml)
+}
+
+
+/// Loads a YAML file from the specified file path and returns the parsed YAML value.
+pub fn process_playbook(file_path: &str, current_config_yaml: yaml_rust2::Yaml) -> Result<String, Box<dyn Error>> {
+    let file_data = files_and_dirs::read_file(file_path)?;
+    let mut merged_yaml = current_config_yaml.clone();
+
+    match yaml_handler::load_yaml(&file_data) {
+        Ok(yaml) => {
+            yaml_handler::combine_yaml(&mut merged_yaml, yaml);
+        },
+        Err(e) => {
+            print_error!("{}", e);
+        }
+    }
+    let _playbook_yaml_file_out = files_and_dirs::write_file("/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/playbook_s1.yaml", &yaml_handler::yaml_to_string(&merged_yaml)?)?;
+    
+    let template = files_and_dirs::read_file("/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/playbook_s1.yaml")?;
+    //let json: JsonValue = yaml_handler::yaml_to_json(&template).unwrap();
+    //let tera_context = Context::from_value(json)?;
+
+    //let full_data_string = process_template(&template, &tera_context)?;
+    //files_and_dirs::write_file("/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/final_playbook.yaml", &full_data_string)?;
+
+    Ok(template)
 }

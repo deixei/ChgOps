@@ -4,6 +4,7 @@ use std::fmt;
 use yaml_merge_keys::merge_keys;
 use serde_yaml;
 use serde_json;
+use crate::{print_error, print_info, print_success, print_warning};
 
 // Define a custom error type for better error handling
 #[derive(Debug)]
@@ -122,7 +123,7 @@ x:
             println!("{}", out_str);
         },
         Err(e) => {
-            eprintln!("Error: {}", e);
+            print_error!("{}", e);
         }
         
     }
@@ -153,9 +154,11 @@ pub fn yaml_to_json(yaml_str: &str) -> Result<serde_json::Value, Box<dyn std::er
     let yaml_value: serde_yaml::Value = serde_yaml::from_str(yaml_str).unwrap();
 
     match serde_json::to_value(yaml_value){
-        Ok(json) => Ok(json),
+        Ok(json) => {
+            //println!("{:#?}", json);
+            Ok(json)},
         Err(e) => {
-            let message = format!("ERROR: Converting YAML to JSON: {}", e);
+            let message = format!("Converting YAML to JSON: {:#?}", e);
             Err(Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, message)))
         }        
     }
@@ -181,7 +184,7 @@ pub fn load(files: Vec<String>, destination: &str) -> Result<Yaml, Box<dyn std::
                 combine_yaml(&mut merged_yaml, merge_keys(documents).unwrap());
             },
             Err(e) => {
-                eprintln!("Error: {} \n File: {}", e, file);
+                print_error!("Error: {} \n File: {}", e, file);
             }
         }
     }

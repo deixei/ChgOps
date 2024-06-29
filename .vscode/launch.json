@@ -7,7 +7,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'chgops'",
+            "name": "chgops run plyreg1",
             "cargo": {
                 "args": [
                     "build",
@@ -19,7 +19,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["run", "--name","playbook", "--path", "./playbooks/workspace1"],
+            "args": ["run", "--name","plyreg1", "--path", "./playbooks/workspace2"],
             "cwd": "${workspaceFolder}"
         },
         {

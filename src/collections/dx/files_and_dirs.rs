@@ -53,7 +53,7 @@ pub fn sort_files_by_path_length(files: &mut Vec<String>) {
 
 pub fn read_file(file_path: &str) -> Result<String, Box<dyn std::error::Error>> {
     if !std::path::Path::new(file_path).exists() {
-        return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, format!("ERROR: File not found: {}", file_path))));
+        return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, format!("File not found: {}", file_path))));
     }
     match std::fs::read_to_string(file_path) {
         Ok(s) => {
@@ -61,7 +61,7 @@ pub fn read_file(file_path: &str) -> Result<String, Box<dyn std::error::Error>> 
             Ok(s)
         },
         Err(e) => {
-            let message = format!("ERROR: Reading file: {}, {}", e, file_path);
+            let message = format!("Reading file: {}, {}", e, file_path);
             Err(Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, message)))
         }
     }

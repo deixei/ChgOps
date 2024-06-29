@@ -13,8 +13,10 @@ use std::collections::HashMap;
 use yaml_rust2::{YamlLoader, Yaml};
 use std::fs::File;
 use std::io::prelude::*;
+use tera::Context;
+use serde_json::Value;
 
-use crate::{print_banner_yellow, print_info, print_success, print_warning};
+use crate::{print_banner_yellow, print_error, print_banner_green, print_warning};
 
 pub fn open_yaml(filename: &str) -> Vec<Yaml> {
     let mut f = File::open(filename).unwrap();
@@ -24,7 +26,7 @@ pub fn open_yaml(filename: &str) -> Vec<Yaml> {
     let docs = match YamlLoader::load_from_str(&s) {
         Ok(docs) => docs,
         Err(err) => {
-            eprintln!("ERROR: filename:{} parsing YAML: {}", filename, err);
+            print_error!("filename:{} parsing YAML: {}", filename, err);
             return Vec::new();
         }
     };
@@ -62,6 +64,36 @@ pub fn dump_yaml(doc: &Yaml, indent: usize) {
 lazy_static! {
     pub static ref WORKSPACE: Mutex<ChgOpsWorkspace> = Mutex::new(ChgOpsWorkspace::new());
 }
+use std::sync::RwLock;
+lazy_static! {
+    pub static ref FACTS: RwLock<Facts> = RwLock::new(Facts::new());
+}
+
+#[derive(Debug, Default)]
+pub struct Facts {
+    pub yaml: serde_yaml::Value,
+    pub str: String,
+    pub context: Context,
+}
+
+impl Facts {
+    pub fn new() -> Facts {
+        Facts {
+            yaml: serde_yaml::Value::Null,
+            str: "".to_string(),
+            context: Context::new(),
+        }
+    }
+
+    pub fn from_yaml2(&mut self, yaml: &yaml_rust2::Yaml) {
+        self.str = yaml_handler::yaml_to_string(&yaml).unwrap();
+        self.yaml = serde_yaml::from_str(&self.str).unwrap();
+        let json: serde_json::Value = yaml_handler::yaml_to_json(&self.str).unwrap();
+        self.context = Context::from_serialize(json).unwrap();
+    }
+    
+}
+
 
 #[derive(Debug, Default)]
 pub struct ChgOpsWorkspace {
@@ -80,9 +112,6 @@ pub struct ChgOpsWorkspace {
 
 
     pub active_playbook_document: String,
-
-    // dictionary of all the playbooks to hold facts
-    pub facts: HashMap<String, PlaybookCommandOutput>,
 }
 
 impl ChgOpsWorkspace {
@@ -103,21 +132,6 @@ impl ChgOpsWorkspace {
             variables: vec![],
             summary: PlaybookSummary::new(),
             active_playbook_document: "".to_string(),
-            facts: HashMap::new(),
-        }
-    }
-
-    pub fn add_fact(&mut self, key: String, value: PlaybookCommandOutput) {
-        self.facts.insert(key, value);
-    }
-
-    pub fn get_fact(&mut self, key: String) -> PlaybookCommandOutput {
-        self.facts.get(&key).unwrap().clone()
-    }
-
-    pub fn print_facts(&mut self) {
-        for (key, value) in &self.facts {
-            println!("Key: {}, Value: {:?}", key, value);
         }
     }
 
@@ -147,30 +161,29 @@ impl ChgOpsWorkspace {
         format!("{}/config.yaml", &self.workspace_path())
     }
 
+
     pub fn load_workspace(&mut self) {
         let pattern1 = r".*\.yaml$";
 
         let list_of_files_in_collection = files_and_dirs::find_files_by_regex(self.collection_path(), pattern1).unwrap_or_else(|err| {
-            println!("Error finding files in collection: {}", err);
+            print_error!("Error finding files in collection: {}", err);
             panic!()
         });
 
-        //println!("list_of_files_in_collection: {:#?}", list_of_files_in_collection);
-
         if list_of_files_in_collection.len() == 0 {
-            eprintln!("ERROR: No files found in collection");
+            print_error!("ERROR: No files found in collection");
             panic!();
         }
 
         let pattern = r".*/vars/.*\.yaml$";
 
         let list_of_files_in_workspace = files_and_dirs::find_files_by_regex(self.workspace_path(), pattern).unwrap_or_else(|err| {
-            println!("Error finding files in workspace: {}", err);
+            print_error!("Error finding files in workspace: {}", err);
             panic!()
         });
 
         if list_of_files_in_workspace.len() == 0 {
-            eprintln!("ERROR: No 'vars' files found in workspace");
+            print_error!("No 'vars' files found in workspace");
             panic!();
         }
 
@@ -183,10 +196,23 @@ impl ChgOpsWorkspace {
             Ok(data) => {
                 println!("Facts are set to be used");
                 // we can now process the playbook
+                {
+                    let mut facts = FACTS.write().unwrap();
+                    facts.from_yaml2(&data);
+                }
+
+                match config_proc::process_playbook(&self.playbook_full_path(), data) {
+                    Ok(playbook_str) => {
+                        self.playbook = serde_yaml::from_str(&playbook_str).unwrap();
+                    },
+                    Err(err) => {
+                        print_error!("ERROR: processing playbook: {}", err);
+                    }
+                }
 
             },
             Err(err) => {
-                eprintln!("ERROR: processing configuration files: {}", err);
+                print_error!("ERROR: processing configuration files: {}", err);
             }
         };
 
@@ -233,7 +259,7 @@ impl ChgOpsWorkspace {
         self.summary.set_end_time();
 
         self.summary.display();
-        println!("ChgOps - End of execution");
+        print_banner_yellow!("ChgOps - End of execution");
     }
 
     pub fn display(&mut self) {
@@ -317,7 +343,7 @@ impl PlaybookSummary {
     }
 
     pub fn display(&self) {
-        println!("####### Playbook execution summary ##########");
+        print_banner_green!("####### Playbook execution summary ##########");
         print!("Summary:\n\texecuted: {}", self.tasks_counter);
         print!("\tsuccess : {}", self.success_counter);
         print!("\tfailed  : {}", self.failed_counter);
@@ -330,7 +356,7 @@ impl PlaybookSummary {
         print!("\tstart   : {:?}", start_time_formatted);
         print!("\tend     : {:?}", end_time_formatted);
         println!("\tduration: {:?}", self.duration());
-        println!("#############################################");        
+        print_banner_green!("#############################################");        
     }
 }
 

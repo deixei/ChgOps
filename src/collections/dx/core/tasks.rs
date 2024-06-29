@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value as YamlValue;
+use crate::collections::dx::config_proc;
 use crate::collections::dx::core::shell::Bash;
 use crate::collections::dx::core::shell::WinCmd;
 use crate::collections::dx::core::shell::ShellTrait;
@@ -160,6 +161,7 @@ pub type PrintCommandTask = PlaybookCommand<YamlValue, PrintCommandVars>;
 pub struct PrintCommandVars {
     pub resource: YamlValue,
 }
+use crate::collections::dx::FACTS;
 
 impl PlaybookCommandTrait for PrintCommandTask {
     fn execute(&mut self) {
@@ -178,7 +180,29 @@ impl PlaybookCommandTrait for PrintCommandTask {
             return;
         }
 
-        self.output.stdout = serde_yaml::to_string(&self.command).unwrap();
+        // command as a string that is a tera template inside the resource field
+        // need to process that string with the known facts
+
+        let command_data: String = config_proc::yaml_to_string(&self.command).unwrap();
+
+        let mut data_str: String;
+
+        {
+            let facts = FACTS.read().unwrap();
+            data_str = config_proc::process_template(&command_data, &facts.context).unwrap();
+
+            let inner_data: PrintCommandVars = serde_yaml::from_str(&data_str).unwrap();
+
+            if inner_data.resource == "[object]".to_string() {
+                let values = facts.context.get("mytags").unwrap();
+                println!("values: {:?}", values);
+                data_str = serde_yaml::to_string(&values).unwrap();
+            }
+    
+        }
+
+
+        self.output.stdout = data_str;
 
         self.output.stderr = "".to_string();
         
