@@ -14,7 +14,7 @@ use yaml_rust2::{YamlLoader, Yaml};
 use std::fs::File;
 use std::io::prelude::*;
 use tera::Context;
-use serde_json::Value;
+use std::sync::RwLock;
 
 use crate::{print_banner_yellow, print_error, print_banner_green, print_warning};
 
@@ -64,7 +64,7 @@ pub fn dump_yaml(doc: &Yaml, indent: usize) {
 lazy_static! {
     pub static ref WORKSPACE: Mutex<ChgOpsWorkspace> = Mutex::new(ChgOpsWorkspace::new());
 }
-use std::sync::RwLock;
+
 lazy_static! {
     pub static ref FACTS: RwLock<Facts> = RwLock::new(Facts::new());
 }
@@ -430,7 +430,8 @@ impl Playbook {
 
         for task in self.tasks.iter_mut() {
             task.execute();
-            task.display(verbose.clone());
+            // TODO: display task output when needed
+            //task.display(verbose.clone());
         }
 
     }
@@ -518,7 +519,7 @@ pub trait PlaybookCommandTrait {
 pub struct PlaybookCommand<COMMAND, VARS> {
     pub command: COMMAND,
     pub name: Option<String>,
-    pub vars: Option<VARS>,
+    pub vars: VARS,
     pub register: Option<String>,
     pub state: Option<String>,
     pub when: Option<String>,

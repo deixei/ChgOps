@@ -10,19 +10,22 @@ mytags:
   ad1: marcio@deixei.com
 tasks:
   - dx.core.print:
-      command: 
+      command: "info"
+      vars:
         resource: "{{ mytags | as_base64 }}"
       name: "Ecosystem"
       register: eco1
 
   - dx.core.print:
-      command: 
+      command: "debug"
+      vars:
         resource: "{{ mytags | as_json }}"
       name: "Tags"
       register: tg1
 
   - dx.core.print:
-      command: 
+      command: "success"
+      vars:
         resource: "{{ mytags }}"
       name: "Tags as object"
       register: tg2

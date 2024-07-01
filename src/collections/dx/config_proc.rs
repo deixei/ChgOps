@@ -108,14 +108,14 @@ pub fn merge_yaml(a: &mut YamlValue, b: YamlValue) {
 pub fn process_configuration_files(collections_files: Vec<String>, workplace_files: Vec<String>) -> Result<yaml_rust2::Yaml, Box<dyn std::error::Error>> {
     //println!("Processing configuration files...");
     let file_paths: Vec<String> = collections_files.into_iter().chain(workplace_files).collect();
-    let yaml: yaml_rust2::Yaml = yaml_handler::load(file_paths, "/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/merged.yaml")?;
+    let _yaml: yaml_rust2::Yaml = yaml_handler::load(file_paths, "/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/merged.yaml")?;
 
     let file_data = files_and_dirs::read_file("/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/merged.yaml")?;
     let json: JsonValue = yaml_handler::yaml_to_json(&file_data).unwrap();
     //println!("JSON: {:#?}", json);
     //let tera_context = Context::from_value(json)?;
     let tera_context = Context::from_serialize(json)?;
-    println!("tera_context: {:#?}", tera_context);
+    //println!("tera_context: {:#?}", tera_context);
     //println!("file_data: {:#?}", file_data);
     let _r = process_template(&file_data, &tera_context)?;
     let _o = files_and_dirs::write_file("/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/final.yaml", &_r)?;
@@ -142,11 +142,21 @@ pub fn process_playbook(file_path: &str, current_config_yaml: yaml_rust2::Yaml) 
     let _playbook_yaml_file_out = files_and_dirs::write_file("/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/playbook_s1.yaml", &yaml_handler::yaml_to_string(&merged_yaml)?)?;
     
     let template = files_and_dirs::read_file("/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/playbook_s1.yaml")?;
-    //let json: JsonValue = yaml_handler::yaml_to_json(&template).unwrap();
-    //let tera_context = Context::from_value(json)?;
-
-    //let full_data_string = process_template(&template, &tera_context)?;
-    //files_and_dirs::write_file("/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/final_playbook.yaml", &full_data_string)?;
 
     Ok(template)
+}
+
+// based on an input of "{{ object.path }}", returns "object.path" trimmed
+pub fn extract_object_path_from_handlebars(handlebars: &str) -> String {
+    // if contains pipes,  return the original string
+    let mut path = handlebars.to_string();
+    if path.contains("|") {
+        return path;
+    }
+    // extract the path from inside the handlebars, with a regex
+    let re = regex::Regex::new(r"\{\{(.*)\}\}").unwrap();
+    let caps = re.captures(&handlebars).unwrap();
+    path = caps.get(1).unwrap().as_str().to_string();
+    path = path.trim().to_string();
+    path
 }

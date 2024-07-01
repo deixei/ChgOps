@@ -5,6 +5,8 @@ use crate::collections::dx::core::shell::Bash;
 use crate::collections::dx::core::shell::WinCmd;
 use crate::collections::dx::core::shell::ShellTrait;
 use crate::collections::dx::{PlaybookCommand, PlaybookCommandTrait, PlaybookCommandOutput};
+use crate::collections::dx::FACTS;
+use crate::{print_banner_yellow, print_error, print_banner_green, print_warning};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum CoreTasks {
@@ -155,22 +157,25 @@ impl PlaybookCommandTrait for WinCmdCommandTask {
     }
 }
 
-pub type PrintCommandTask = PlaybookCommand<YamlValue, PrintCommandVars>;
+pub type PrintCommandTask = PlaybookCommand<Option<String>, PrintCommandVars>;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Default, Clone)]
 pub struct PrintCommandVars {
     pub resource: YamlValue,
 }
-use crate::collections::dx::FACTS;
+
 
 impl PlaybookCommandTrait for PrintCommandTask {
     fn execute(&mut self) {
         self.output = PlaybookCommandOutput::new();
         self.output.set_start_time();
 
-        let when = self.when.clone().unwrap_or("true".to_string());
+        let command = self.command.clone().unwrap_or("print".to_string());
+        let name = self.name.clone().unwrap_or(command.to_string());
+        let vars: PrintCommandVars = self.vars.clone();
         let register = self.register.clone().unwrap_or("".to_string());
         let state = self.state.clone().unwrap_or("present".to_string());
+        let when = self.when.clone().unwrap_or("true".to_string());
 
 
         if when == "false"{
@@ -183,22 +188,80 @@ impl PlaybookCommandTrait for PrintCommandTask {
         // command as a string that is a tera template inside the resource field
         // need to process that string with the known facts
 
-        let command_data: String = config_proc::yaml_to_string(&self.command).unwrap();
+        //let command_data: String = config_proc::yaml_to_string(&vars.resource).unwrap();
+        //let command_input: PrintCommandVars = serde_yaml::from_str(&command_data).unwrap();
+        
+        let mut data_str: String = "".to_string();
+        let template = serde_yaml::to_string(&vars.resource).unwrap();
 
-        let mut data_str: String;
+        let processed_temp: String;
 
         {
             let facts = FACTS.read().unwrap();
-            data_str = config_proc::process_template(&command_data, &facts.context).unwrap();
+            processed_temp = config_proc::process_template(&template, &facts.context).unwrap();
+        }
 
-            let inner_data: PrintCommandVars = serde_yaml::from_str(&data_str).unwrap();
+        //println!("processed_temp: {:?}", processed_temp);
 
-            if inner_data.resource == "[object]".to_string() {
-                let values = facts.context.get("mytags").unwrap();
-                println!("values: {:?}", values);
-                data_str = serde_yaml::to_string(&values).unwrap();
+        let resource: YamlValue = serde_yaml::from_str(&processed_temp).unwrap();
+
+        //println!("resource: {:?}", resource);
+
+        match resource {
+            YamlValue::String(_) => {
+                // in case it as "{{" and "}}", it is a template
+                // in case this is a base64 encoded string, it is a file
+                // in case this is a json string, it is a json
+
+                let resource_str = resource.as_str().unwrap();
+                if resource_str.contains("{{") && resource_str.contains("}}") {
+                    let obj_name:String = config_proc::extract_object_path_from_handlebars(&resource_str);
+                    {
+                        let facts = FACTS.read().unwrap();
+                        let values = facts.context.get(&obj_name).unwrap();
+                        //println!("values: {:?}", values);
+                        data_str = serde_yaml::to_string(&values).unwrap();
+                    }
+                }
+                else if resource_str.contains("[object]") {
+                    let obj_name:String = config_proc::extract_object_path_from_handlebars(&template);
+                    //println!("obj_name: {:?}", obj_name);
+                    {
+                        let facts = FACTS.read().unwrap();
+                        let values = facts.context.get(&obj_name).unwrap();
+                        //println!("values: {:?}", values);
+                        data_str = serde_yaml::to_string(&values).unwrap();
+                    }
+                }
+                else {
+                    data_str = resource_str.to_string();
+                }
+
+            },
+            _ => {
+                //println!("values: {:?}", command_input.resource);
+                data_str = serde_yaml::to_string(&vars.resource).unwrap();
             }
-    
+        }
+
+        // Commnad execution zone
+        // print_error, print_warning, print_info, print_success
+        // print_banner_yellow, print_banner_green, print_banner_red
+        println!("name: {}", name);
+        if command == "print" {
+            println!("{}", data_str);
+        } else if command == "debug" {
+            print_warning!("{:?}", data_str);
+        } else if command == "error" {
+            print_error!("{}", data_str);
+        } else if command == "warning" {
+            print_warning!("{}", data_str);
+        } else if command == "info" {
+            print_banner_yellow!("{}", data_str);
+        } else if command == "success" {
+            print_banner_green!("{}", data_str);
+        } else {
+            println!("{}", data_str);
         }
 
 

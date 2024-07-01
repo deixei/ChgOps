@@ -142,7 +142,7 @@ mytags:
   CostCenter: "22222222"
   ad1: marcio@deixei.com
 params:
-  time: "2024-06-29T07:54:48.685183642Z"
+  time: "2024-07-01T18:12:45.063430729Z"
   client_id: 209badfd-aca6-4348-8993-c233768a3666
 self:
   sites_name: my_playbook
@@ -171,17 +171,20 @@ settings:
   name: workspace2-when
 tasks:
   - dx.core.print:
-      command:
+      command: info
+      vars:
         resource: "{{ mytags | as_base64 }}"
       name: Ecosystem
       register: eco1
   - dx.core.print:
-      command:
+      command: debug
+      vars:
         resource: "{{ mytags | as_json }}"
       name: Tags
       register: tg1
   - dx.core.print:
-      command:
+      command: success
+      vars:
         resource: "{{ mytags }}"
       name: Tags as object
       register: tg2
