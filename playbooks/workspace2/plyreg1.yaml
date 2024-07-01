@@ -28,4 +28,11 @@ tasks:
       vars:
         resource: "{{ mytags }}"
       name: "Tags as object"
-      register: tg2
+      register: "tg2"
+
+  - dx.core.print:
+      command: "success"
+      vars:
+        resource: "{{ tg2.stdout }}"
+      name: "return from tg1"
+      register: "tg3"

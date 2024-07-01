@@ -142,7 +142,7 @@ mytags:
   CostCenter: "22222222"
   ad1: marcio@deixei.com
 params:
-  time: "2024-07-01T18:12:45.063430729Z"
+  time: "2024-07-01T18:36:29.988109350Z"
   client_id: 209badfd-aca6-4348-8993-c233768a3666
 self:
   sites_name: my_playbook
@@ -188,3 +188,9 @@ tasks:
         resource: "{{ mytags }}"
       name: Tags as object
       register: tg2
+  - dx.core.print:
+      command: success
+      vars:
+        resource: "{{ tg2.stdout }}"
+      name: return from tg1
+      register: tg3

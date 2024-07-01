@@ -201,7 +201,7 @@ impl PlaybookCommandTrait for PrintCommandTask {
             processed_temp = config_proc::process_template(&template, &facts.context).unwrap();
         }
 
-        //println!("processed_temp: {:?}", processed_temp);
+        println!("processed_temp: {:?}", processed_temp);
 
         let resource: YamlValue = serde_yaml::from_str(&processed_temp).unwrap();
 
@@ -286,8 +286,10 @@ impl PlaybookCommandTrait for PrintCommandTask {
 
         if register != "" {
             // add to the central fact store this reference
-            //let mut workspace = WORKSPACE.lock().unwrap();
-            //workspace.facts.insert(register.clone(), self.output.clone());
+            {
+                let mut facts = FACTS.write().unwrap();
+                facts.context.insert(register, &self.output);
+            }
         }
 
         self.output.set_end_time();
