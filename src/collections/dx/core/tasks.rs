@@ -6,7 +6,7 @@ use crate::collections::dx::core::shell::WinCmd;
 use crate::collections::dx::core::shell::ShellTrait;
 use crate::collections::dx::{PlaybookCommand, PlaybookCommandTrait, PlaybookCommandOutput};
 use crate::collections::dx::FACTS;
-use crate::{print_banner_yellow, print_error, print_banner_green, print_warning};
+use crate::{print_error, print_warning, print_info, print_success, print_banner_yellow, print_banner_green, print_banner_red};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum CoreTasks {
@@ -59,7 +59,7 @@ impl PlaybookCommandTrait for BashCommandTask {
 
     fn display(&self, verbose: Option<String>) {
         let verbose = verbose.unwrap_or("".to_string());
-        println!("*** {} *** [e:{}/s:{}/f:{}/s:{}/c:{}] ***", 
+        print_info!("*** {} *** [e:{}/s:{}/f:{}/s:{}/c:{}] ***", 
             self.name.as_ref().unwrap_or(&self.command),
             self.output.status,
             self.output.success,
@@ -68,18 +68,18 @@ impl PlaybookCommandTrait for BashCommandTask {
             self.output.changed
         );
         if verbose == "v" {
-            println!("Task: {:?}", self);
-            println!("Command: {}", self.command);
-            println!("   === Output ===");
+            print_info!("Task: {:?}", self);
+            print_info!("Command: {}", self.command);
+            print_banner_green!("   === Output ===");
         }
         if verbose == "vv" {
-            println!("{:?}", self.output);
+            print_success!("{:?}", self.output);
         }
         else {
-            println!("   === Output ===");
-            println!("{}", self.output.stdout);
-            println!("   === Errors ===");
-            println!("{}", self.output.stderr);
+            print_banner_green!("   === Output ===");
+            print_success!("{}", self.output.stdout);
+            print_banner_red!("   === Errors ===");
+            print_error!("{}", self.output.stderr);
         }
     }
 
@@ -195,15 +195,20 @@ impl PlaybookCommandTrait for PrintCommandTask {
         let template = serde_yaml::to_string(&vars.resource).unwrap();
 
         let processed_temp: String;
-
         {
             let facts = FACTS.read().unwrap();
             processed_temp = config_proc::process_template(&template, &facts.context).unwrap();
         }
 
-        println!("processed_temp: {:?}", processed_temp);
+        //println!("processed_temp: {:?}", processed_temp);
 
-        let resource: YamlValue = serde_yaml::from_str(&processed_temp).unwrap();
+        let resource = match serde_yaml::from_str(&processed_temp) {
+            Ok(v) => v,
+            Err(e) => {
+                print_error!("Error: {:?}", e);
+                YamlValue::Null
+            }
+        };
 
         //println!("resource: {:?}", resource);
 
@@ -221,6 +226,7 @@ impl PlaybookCommandTrait for PrintCommandTask {
                         let values = facts.context.get(&obj_name).unwrap();
                         //println!("values: {:?}", values);
                         data_str = serde_yaml::to_string(&values).unwrap();
+                        self.output.data = serde_yaml::from_str(&data_str).unwrap();
                     }
                 }
                 else if resource_str.contains("[object]") {
@@ -231,16 +237,19 @@ impl PlaybookCommandTrait for PrintCommandTask {
                         let values = facts.context.get(&obj_name).unwrap();
                         //println!("values: {:?}", values);
                         data_str = serde_yaml::to_string(&values).unwrap();
+                        self.output.data = serde_yaml::from_str(&data_str).unwrap();
                     }
                 }
                 else {
                     data_str = resource_str.to_string();
+                    self.output.data = serde_yaml::from_str(&data_str).unwrap();
                 }
 
             },
             _ => {
                 //println!("values: {:?}", command_input.resource);
                 data_str = serde_yaml::to_string(&vars.resource).unwrap();
+                self.output.data = serde_yaml::from_str(&data_str).unwrap();
             }
         }
 
@@ -288,7 +297,7 @@ impl PlaybookCommandTrait for PrintCommandTask {
             // add to the central fact store this reference
             {
                 let mut facts = FACTS.write().unwrap();
-                facts.context.insert(register, &self.output);
+                facts.context.insert(register, &self.output.data);
             }
         }
 
@@ -300,7 +309,7 @@ impl PlaybookCommandTrait for PrintCommandTask {
 
         let command_str = serde_yaml::to_string(&self.command).unwrap();
 
-        println!("*** {} *** [e:{}/s:{}/f:{}/s:{}/c:{}] ***", 
+        print_info!("*** {} *** [e:{}/s:{}/f:{}/s:{}/c:{}] ***", 
             self.name.as_ref().unwrap_or(&command_str),
             self.output.status,
             self.output.success,
@@ -309,18 +318,18 @@ impl PlaybookCommandTrait for PrintCommandTask {
             self.output.changed
         );
         if verbose == "v" {
-            println!("Task: {:?}", self);
-            println!("Command: {}", command_str);
-            println!("   === Output ===");
+            print_info!("Task: {:?}", self);
+            print_info!("Command: {}", command_str);
+            print_banner_green!("   === Output ===");
         }
         if verbose == "vv" {
-            println!("{:?}", self.output);
+            print_success!("{:?}", self.output);
         }
         else {
-            println!("   === Output ===");
-            println!("{}", self.output.stdout);
-            println!("   === Errors ===");
-            println!("{}", self.output.stderr);
+            print_banner_green!("   === Output ===");
+            print_success!("{}", self.output.stdout);
+            print_banner_red!("   === Errors ===");
+            print_error!("{}", self.output.stderr);
         }
     }
 

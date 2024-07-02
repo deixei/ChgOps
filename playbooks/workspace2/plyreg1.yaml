@@ -33,6 +33,6 @@ tasks:
   - dx.core.print:
       command: "success"
       vars:
-        resource: "{{ tg2.stdout }}"
+        resource: "{{ tg2.CostCenter }}"
       name: "return from tg1"
       register: "tg3"

@@ -431,7 +431,7 @@ impl Playbook {
         for task in self.tasks.iter_mut() {
             task.execute();
             // TODO: display task output when needed
-            //task.display(verbose.clone());
+            task.display(verbose.clone());
         }
 
     }
@@ -451,6 +451,8 @@ pub struct PlaybookCommandOutput {
     pub skipped: i32,
     pub changed: i32,
 
+    pub data: Option<serde_yaml::Value>,
+
     pub start_time: Option<DateTime<Utc>>,
     pub end_time: Option<DateTime<Utc>>,
 }
@@ -466,6 +468,7 @@ impl PlaybookCommandOutput {
             failed: 0,
             skipped: 0,
             changed: 0,
+            data: None,
             start_time: None,
             end_time: None,
         }
