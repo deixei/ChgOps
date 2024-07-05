@@ -8,6 +8,7 @@ use crate::collections::dx::{PlaybookCommand, PlaybookCommandTrait, PlaybookComm
 use crate::collections::dx::FACTS;
 use crate::{print_error, print_warning, print_info, print_success, print_banner_yellow, print_banner_green, print_banner_red, print_banner_blue};
 
+// register task execution here:
 #[derive(Debug, Deserialize, Serialize)]
 pub enum CoreTasks {
     #[serde(rename = "dx.core.bash")]
@@ -20,12 +21,25 @@ pub enum CoreTasks {
     PrintCommandTask(PrintCommandTask),
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Default, Clone)]
 pub struct BashCommandVars {
     pub resource: YamlValue,
 }
 
+#[derive(Debug, Deserialize, Serialize, Default, Clone)]
+pub struct WinCmdCommandVars {
+    pub resource: YamlValue,
+}
+
+#[derive(Debug, Deserialize, Serialize, Default, Clone)]
+pub struct PrintCommandVars {
+    pub resource: YamlValue,
+}
+
 pub type BashCommandTask = PlaybookCommand<String, BashCommandVars>;
+pub type WinCmdCommandTask = PlaybookCommand<String, WinCmdCommandVars>;
+pub type PrintCommandTask = PlaybookCommand<Option<String>, PrintCommandVars>;
+
 
 impl PlaybookCommandTrait for BashCommandTask {
     fn execute(&mut self) {
@@ -59,27 +73,31 @@ impl PlaybookCommandTrait for BashCommandTask {
 
     fn display(&self, verbose: Option<String>) {
         let verbose = verbose.unwrap_or("".to_string());
-        print_info!("*** {} *** [e:{}/s:{}/f:{}/s:{}/c:{}] ***", 
-            self.name.as_ref().unwrap_or(&self.command),
+        print_banner_blue!("TASK: *** {} *** [St.:{}/Succ.:{}/Fail:{}/Skip:{}/Chg:{}] ***", 
+            self.name.as_ref().unwrap_or(&"Unnamed".to_string()),
             self.output.status,
             self.output.success,
             self.output.failed,
             self.output.skipped,
             self.output.changed
         );
-        if verbose == "v" {
-            print_info!("Task: {:?}", self);
-            print_info!("Command: {}", self.command);
-            print_banner_green!("   === Output ===");
+        if verbose.len() >= 1 {
+            print_info!("Task details: {:?}", self);
+            //print_info!("Command: {}", command_str);
         }
-        if verbose == "vv" {
-            print_success!("{:?}", self.output);
+        if verbose.len() >= 2 {
+            print_banner_yellow!("=== Output Obj ===");
+            print_info!("{:?}", self.output);
         }
         else {
-            print_banner_green!("   === Output ===");
-            print_success!("{}", self.output.stdout);
-            print_banner_red!("   === Errors ===");
-            print_error!("{}", self.output.stderr);
+            if self.output.stdout != "" {
+                print_banner_green!("=== Output ===");
+                print_success!("{}", self.output.stdout);
+            }
+            if self.output.stderr != "" {
+                print_banner_red!("=== Errors ===");
+                print_error!("{}", self.output.stderr);
+            }
         }
     }
 
@@ -87,13 +105,6 @@ impl PlaybookCommandTrait for BashCommandTask {
         self.output.clone()
     }
 }
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct WinCmdCommandVars {
-    pub resource: YamlValue,
-}
-
-pub type WinCmdCommandTask = PlaybookCommand<String, WinCmdCommandVars>;
 
 impl PlaybookCommandTrait for WinCmdCommandTask {
     fn execute(&mut self) {
@@ -129,41 +140,38 @@ impl PlaybookCommandTrait for WinCmdCommandTask {
     
     fn display(&self, verbose: Option<String>) {
         let verbose = verbose.unwrap_or("".to_string());
-        println!("*** {} *** [e:{}/s:{}/f:{}/s:{}/c:{}] ***", 
-            self.name.as_ref().unwrap_or(&self.command),
+        print_banner_blue!("TASK: *** {} *** [St.:{}/Succ.:{}/Fail:{}/Skip:{}/Chg:{}] ***", 
+            self.name.as_ref().unwrap_or(&"Unnamed".to_string()),
             self.output.status,
             self.output.success,
             self.output.failed,
             self.output.skipped,
             self.output.changed
         );
-        if verbose == "v" {
-            println!("Task: {:?}", self);
-            println!("Command: {}", self.command);
-            println!("   === Output ===");
+        if verbose.len() >= 1 {
+            print_info!("Task details: {:?}", self);
+            //print_info!("Command: {}", command_str);
         }
-        if verbose == "vv" {
-            println!("{:?}", self.output);
+        if verbose.len() >= 2 {
+            print_banner_yellow!("=== Output Obj ===");
+            print_info!("{:?}", self.output);
         }
         else {
-            println!("   === Output ===");
-            println!("{}", self.output.stdout);
-            println!("   === Errors ===");
-            println!("{}", self.output.stderr);
+            if self.output.stdout != "" {
+                print_banner_green!("=== Output ===");
+                print_success!("{}", self.output.stdout);
+            }
+            if self.output.stderr != "" {
+                print_banner_red!("=== Errors ===");
+                print_error!("{}", self.output.stderr);
+            }
         }
     }
+
     fn output(&self) -> PlaybookCommandOutput {
         self.output.clone()
     }
 }
-
-pub type PrintCommandTask = PlaybookCommand<Option<String>, PrintCommandVars>;
-
-#[derive(Debug, Deserialize, Serialize, Default, Clone)]
-pub struct PrintCommandVars {
-    pub resource: YamlValue,
-}
-
 
 impl PlaybookCommandTrait for PrintCommandTask {
     fn execute(&mut self) {
@@ -191,7 +199,7 @@ impl PlaybookCommandTrait for PrintCommandTask {
         //let command_data: String = config_proc::yaml_to_string(&vars.resource).unwrap();
         //let command_input: PrintCommandVars = serde_yaml::from_str(&command_data).unwrap();
         
-        let mut data_str: String = "".to_string();
+        let data_str;
         let template = serde_yaml::to_string(&vars.resource).unwrap();
 
         let processed_temp: String;
@@ -306,9 +314,6 @@ impl PlaybookCommandTrait for PrintCommandTask {
 
     fn display(&self, verbose: Option<String>) {
         let verbose = verbose.unwrap_or("".to_string());
-
-        //let command_str = serde_yaml::to_string(&self.command).unwrap();
-
         print_banner_blue!("TASK: *** {} *** [St.:{}/Succ.:{}/Fail:{}/Skip:{}/Chg:{}] ***", 
             self.name.as_ref().unwrap_or(&"Unnamed".to_string()),
             self.output.status,
@@ -344,7 +349,8 @@ impl PlaybookCommandTrait for PrintCommandTask {
 
 
 
-
+// register implementation here:
+ 
 impl PlaybookCommandTrait for CoreTasks {
     fn execute(&mut self) {
         match self {

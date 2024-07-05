@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use crate::collections::dx::{azure::cli::AzCli, PlaybookCommand, PlaybookCommandTrait, PlaybookCommandOutput};
 use serde_yaml::Value as YamlValue;
+use crate::{print_error, print_warning, print_info, print_success, print_banner_yellow, print_banner_green, print_banner_red, print_banner_blue};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum AzureTasks {
@@ -50,27 +51,31 @@ impl PlaybookCommandTrait for AzureLoginTask {
 
     fn display(&self, verbose: Option<String>) {
         let verbose = verbose.unwrap_or("".to_string());
-        println!("*** {} *** [e:{}/s:{}/f:{}/s:{}/c:{}] ***", 
-            self.name.as_ref().unwrap_or(&self.command.client_id),
+        print_banner_blue!("TASK: *** {} *** [St.:{}/Succ.:{}/Fail:{}/Skip:{}/Chg:{}] ***", 
+            self.name.as_ref().unwrap_or(&"Unnamed".to_string()),
             self.output.status,
             self.output.success,
             self.output.failed,
             self.output.skipped,
             self.output.changed
         );
-        if verbose == "v" {
-            println!("Task: {:?}", self);
-            println!("Command: {}", self.command.client_id);
-            println!("   === Output ===");
+        if verbose.len() >= 1 {
+            print_info!("Task details: {:?}", self);
+            //print_info!("Command: {}", command_str);
         }
-        if verbose == "vv" {
-            println!("{:?}", self.output);
+        if verbose.len() >= 2 {
+            print_banner_yellow!("=== Output Obj ===");
+            print_info!("{:?}", self.output);
         }
         else {
-            println!("   === Output ===");
-            println!("{}", self.output.stdout);
-            println!("   === Errors ===");
-            println!("{}", self.output.stderr);
+            if self.output.stdout != "" {
+                print_banner_green!("=== Output ===");
+                print_success!("{}", self.output.stdout);
+            }
+            if self.output.stderr != "" {
+                print_banner_red!("=== Errors ===");
+                print_error!("{}", self.output.stderr);
+            }
         }
     }
 
@@ -118,27 +123,31 @@ impl PlaybookCommandTrait for AzureCliTask {
 
     fn display(&self, verbose: Option<String>) {
         let verbose = verbose.unwrap_or("".to_string());
-        println!("*** {} *** [e:{}/s:{}/f:{}/s:{}/c:{}] ***", 
-            self.name.as_ref().unwrap_or(&self.command),
+        print_banner_blue!("TASK: *** {} *** [St.:{}/Succ.:{}/Fail:{}/Skip:{}/Chg:{}] ***", 
+            self.name.as_ref().unwrap_or(&"Unnamed".to_string()),
             self.output.status,
             self.output.success,
             self.output.failed,
             self.output.skipped,
             self.output.changed
         );
-        if verbose == "v" {
-            println!("Task: {:?}", self);
-            println!("Command: {}", self.command);
-            println!("   === Output ===");
+        if verbose.len() >= 1 {
+            print_info!("Task details: {:?}", self);
+            //print_info!("Command: {}", command_str);
         }
-        if verbose == "vv" {
-            println!("{:?}", self.output);
+        if verbose.len() >= 2 {
+            print_banner_yellow!("=== Output Obj ===");
+            print_info!("{:?}", self.output);
         }
         else {
-            println!("   === Output ===");
-            println!("{}", self.output.stdout);
-            println!("   === Errors ===");
-            println!("{}", self.output.stderr);
+            if self.output.stdout != "" {
+                print_banner_green!("=== Output ===");
+                print_success!("{}", self.output.stdout);
+            }
+            if self.output.stderr != "" {
+                print_banner_red!("=== Errors ===");
+                print_error!("{}", self.output.stderr);
+            }
         }
     }
 

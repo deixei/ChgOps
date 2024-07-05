@@ -1,0 +1,17 @@
+#!chgops
+# Description: This is a simple playbook .
+---
+name: playbook-dir
+settings:
+  name: "workspace2-dir"
+self:
+  sites_name: "my_playbook"
+
+tasks:
+  - dx.core.bash:
+      command: "ls"
+      name: "List of files"
+      vars:
+        args: "-la"
+      register: "ls_output"
+

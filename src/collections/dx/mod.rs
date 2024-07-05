@@ -203,7 +203,20 @@ impl ChgOpsWorkspace {
 
                 match config_proc::process_playbook(&self.playbook_full_path(), data) {
                     Ok(playbook_str) => {
-                        self.playbook = serde_yaml::from_str(&playbook_str).unwrap();
+                        self.playbook = match serde_yaml::from_str(&playbook_str) {
+                            Ok(playbook) => playbook,
+                            Err(err) => {
+                                // Handle deserialization errors from serde_yaml
+                                if let Some(location) = err.location() {
+                                    let snippet = yaml_handler::get_error_snippet(&playbook_str, location.line(), location.column());
+                                    print_error!("processing playbook: {}\nSnippet:\n{}", err, snippet);
+                                } else {
+                                    print_error!("processing playbook: {}", err);
+                                }
+                                panic!();
+                            }
+                        }
+
                     },
                     Err(err) => {
                         print_error!("ERROR: processing playbook: {}", err);

@@ -104,7 +104,7 @@ l:
     value: 3
   - name: c
     value: 4
-name: playbook-when
+name: playbook-dir
 blueprint2:
   description: Web app with private endpoint
   parameters:
@@ -140,9 +140,8 @@ mytags:
   Department: MY-DEPARTMENT-123
   OperationalContact: demo@deixei.com
   CostCenter: "22222222"
-  ad1: marcio@deixei.com
 params:
-  time: "2024-07-05T06:00:26.678439873Z"
+  time: "2024-07-05T07:16:09.901941879Z"
   client_id: 209badfd-aca6-4348-8993-c233768a3666
 self:
   sites_name: my_playbook
@@ -168,29 +167,11 @@ bom:
         serverfarms_asp_externalid:
           value: demo3
 settings:
-  name: workspace2-when
+  name: workspace2-dir
 tasks:
-  - dx.core.print:
-      command: info
+  - dx.core.bash:
+      command: ls
+      name: List of files
       vars:
-        resource: "{{ mytags | as_base64 }}"
-      name: Ecosystem
-      register: eco1
-  - dx.core.print:
-      command: debug
-      vars:
-        resource: "{{ mytags | as_json }}"
-      name: Tags
-      register: tg1
-  - dx.core.print:
-      command: success
-      vars:
-        resource: "{{ mytags }}"
-      name: Tags as object
-      register: tg2
-  - dx.core.print:
-      command: success
-      vars:
-        resource: "{{ tg2.CostCenter }}"
-      name: return from tg1
-      register: tg3
+        args: "-la"
+      register: ls_output
