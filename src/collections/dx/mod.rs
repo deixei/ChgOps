@@ -344,17 +344,17 @@ impl PlaybookSummary {
 
     pub fn display(&self) {
         print_banner_green!("####### Playbook execution summary ##########");
-        print!("Summary:\n\texecuted: {}", self.tasks_counter);
-        print!("\tsuccess : {}", self.success_counter);
-        print!("\tfailed  : {}", self.failed_counter);
-        print!("\tskipped : {}", self.skipped_counter);
-        println!("\tchanged : {}", self.changed_counter);
+        print!("Summary:\n\tExecuted: {}", self.tasks_counter);
+        print!("\tSuccess: {}", self.success_counter);
+        print!("\tFailed: {}", self.failed_counter);
+        print!("\tSkipped: {}", self.skipped_counter);
+        println!("\tChanged: {}", self.changed_counter);
         
         let start_time_formatted = self.start_time.unwrap().format("%Y-%m-%d %H:%M:%S").to_string();
         let end_time_formatted = self.end_time.unwrap().format("%Y-%m-%d %H:%M:%S").to_string();
 
-        print!("\tstart   : {:?}", start_time_formatted);
-        print!("\tend     : {:?}", end_time_formatted);
+        print!("\tStart: {:?}", start_time_formatted);
+        print!("\tEnd: {:?}", end_time_formatted);
         println!("\tduration: {:?}", self.duration());
         print_banner_green!("#############################################");        
     }
@@ -501,9 +501,10 @@ impl PlaybookCommandOutput {
         println!("\tduration: {:?}", self.duration());
         println!("#############################################");        
     }
+
     pub fn duration(&self) -> String {
         let duration1 = self.end_time.unwrap().signed_duration_since(self.start_time.unwrap());
-        // set duration to a humam readable format
+        // set duration to a human readable format
         let duration = HumanTime::from(duration1);
 
         duration.to_string()
@@ -530,6 +531,10 @@ pub struct PlaybookCommand<COMMAND, VARS> {
     #[serde(skip_deserializing)]
     pub output: PlaybookCommandOutput,
 }
+
+
+// adding more commands to the overall playbook processing is here
+// just add the new command module to the PlaybookTasks enum
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(untagged)]

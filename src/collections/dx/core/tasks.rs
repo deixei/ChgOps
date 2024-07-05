@@ -6,7 +6,7 @@ use crate::collections::dx::core::shell::WinCmd;
 use crate::collections::dx::core::shell::ShellTrait;
 use crate::collections::dx::{PlaybookCommand, PlaybookCommandTrait, PlaybookCommandOutput};
 use crate::collections::dx::FACTS;
-use crate::{print_error, print_warning, print_info, print_success, print_banner_yellow, print_banner_green, print_banner_red};
+use crate::{print_error, print_warning, print_info, print_success, print_banner_yellow, print_banner_green, print_banner_red, print_banner_blue};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum CoreTasks {
@@ -307,29 +307,33 @@ impl PlaybookCommandTrait for PrintCommandTask {
     fn display(&self, verbose: Option<String>) {
         let verbose = verbose.unwrap_or("".to_string());
 
-        let command_str = serde_yaml::to_string(&self.command).unwrap();
+        //let command_str = serde_yaml::to_string(&self.command).unwrap();
 
-        print_info!("*** {} *** [e:{}/s:{}/f:{}/s:{}/c:{}] ***", 
-            self.name.as_ref().unwrap_or(&command_str),
+        print_banner_blue!("TASK: *** {} *** [St.:{}/Succ.:{}/Fail:{}/Skip:{}/Chg:{}] ***", 
+            self.name.as_ref().unwrap_or(&"Unnamed".to_string()),
             self.output.status,
             self.output.success,
             self.output.failed,
             self.output.skipped,
             self.output.changed
         );
-        if verbose == "v" {
-            print_info!("Task: {:?}", self);
-            print_info!("Command: {}", command_str);
-            print_banner_green!("   === Output ===");
+        if verbose.len() >= 1 {
+            print_info!("Task details: {:?}", self);
+            //print_info!("Command: {}", command_str);
         }
-        if verbose == "vv" {
-            print_success!("{:?}", self.output);
+        if verbose.len() >= 2 {
+            print_banner_yellow!("=== Output Obj ===");
+            print_info!("{:?}", self.output);
         }
         else {
-            print_banner_green!("   === Output ===");
-            print_success!("{}", self.output.stdout);
-            print_banner_red!("   === Errors ===");
-            print_error!("{}", self.output.stderr);
+            if self.output.stdout != "" {
+                print_banner_green!("=== Output ===");
+                print_success!("{}", self.output.stdout);
+            }
+            if self.output.stderr != "" {
+                print_banner_red!("=== Errors ===");
+                print_error!("{}", self.output.stderr);
+            }
         }
     }
 

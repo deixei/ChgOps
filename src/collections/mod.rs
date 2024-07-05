@@ -74,3 +74,11 @@ macro_rules! print_banner_red {
         println!("{}", format!($($arg)*).red());
     });
 }
+
+#[macro_export]
+macro_rules! print_banner_blue {
+    ($($arg:tt)*) => ({
+        use colored::*;
+        println!("{}", format!($($arg)*).blue());
+    });
+}
