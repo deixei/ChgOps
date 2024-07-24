@@ -3,6 +3,9 @@ Change management (Chg) and Operations (Ops)
 
 ## Developing
 
+Install rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
 ### local testing
 cargo run -- run --help
 
