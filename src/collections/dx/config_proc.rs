@@ -108,9 +108,9 @@ pub fn merge_yaml(a: &mut YamlValue, b: YamlValue) {
 pub fn process_configuration_files(collections_files: Vec<String>, workplace_files: Vec<String>) -> Result<yaml_rust2::Yaml, Box<dyn std::error::Error>> {
     //println!("Processing configuration files...");
     let file_paths: Vec<String> = collections_files.into_iter().chain(workplace_files).collect();
-    let _yaml: yaml_rust2::Yaml = yaml_handler::load(file_paths, "/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/merged.yaml")?;
+    let _yaml: yaml_rust2::Yaml = yaml_handler::load(file_paths, "./temp/merged.yaml")?;
 
-    let file_data = files_and_dirs::read_file("/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/merged.yaml")?;
+    let file_data = files_and_dirs::read_file("./temp/merged.yaml")?;
     let json: JsonValue = yaml_handler::yaml_to_json(&file_data).unwrap();
     //println!("JSON: {:#?}", json);
     //let tera_context = Context::from_value(json)?;
@@ -118,7 +118,7 @@ pub fn process_configuration_files(collections_files: Vec<String>, workplace_fil
     //println!("tera_context: {:#?}", tera_context);
     //println!("file_data: {:#?}", file_data);
     let _r = process_template(&file_data, &tera_context)?;
-    let _o = files_and_dirs::write_file("/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/final.yaml", &_r)?;
+    let _o = files_and_dirs::write_file("./temp/final.yaml", &_r)?;
 
     let merged_yaml = yaml_handler::load_yaml(&_r)?;
 
@@ -139,9 +139,9 @@ pub fn process_playbook(file_path: &str, current_config_yaml: yaml_rust2::Yaml) 
             print_error!("{}", e);
         }
     }
-    let _playbook_yaml_file_out = files_and_dirs::write_file("/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/playbook_s1.yaml", &yaml_handler::yaml_to_string(&merged_yaml)?)?;
+    let _playbook_yaml_file_out = files_and_dirs::write_file("./temp/playbook_s1.yaml", &yaml_handler::yaml_to_string(&merged_yaml)?)?;
     
-    let template = files_and_dirs::read_file("/home/marcio/repos/deixei/ChgOps/playbooks/workspace2/templates/playbook_s1.yaml")?;
+    let template = files_and_dirs::read_file("./temp/playbook_s1.yaml")?;
 
     Ok(template)
 }
