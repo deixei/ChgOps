@@ -16,7 +16,8 @@ use std::io::prelude::*;
 use tera::Context;
 use std::sync::RwLock;
 
-use crate::{print_banner_yellow, print_error, print_banner_green, print_warning};
+use crate::{print_banner_yellow, print_error, print_banner_green};
+// use crate::{print_banner_yellow, print_error, print_banner_green, print_warning};
 
 pub fn open_yaml(filename: &str) -> Vec<Yaml> {
     let mut f = File::open(filename).unwrap();
@@ -200,7 +201,10 @@ impl ChgOpsWorkspace {
                 match config_proc::process_playbook(&self.playbook_full_path(), data) {
                     Ok(playbook_str) => {
                         self.playbook = match serde_yaml::from_str(&playbook_str) {
-                            Ok(playbook) => playbook,
+                            Ok(playbook) => {
+                                //println!("playbook: {:#?}", playbook);
+                                playbook
+                            },
                             Err(err) => {
                                 // Handle deserialization errors from serde_yaml
                                 if let Some(location) = err.location() {
@@ -211,7 +215,13 @@ impl ChgOpsWorkspace {
                                 }
                                 panic!();
                             }
-                        }
+                        };
+
+                        {
+                            let mut facts = FACTS.write().unwrap();
+                            facts.context.insert("settings", &self.playbook.settings);
+                            println!("facts.context: {:#?}", facts.context);
+                        } 
 
                     },
                     Err(err) => {

@@ -6,6 +6,7 @@ use crate::collections::dx::core::shell::WinCmd;
 use crate::collections::dx::core::shell::ShellTrait;
 use crate::collections::dx::{PlaybookCommand, PlaybookCommandTrait, PlaybookCommandOutput};
 use crate::collections::dx::FACTS;
+
 use crate::{print_error, print_warning, print_info, print_success, print_banner_yellow, print_banner_green, print_banner_red, print_banner_blue};
 
 // register task execution here:
@@ -205,6 +206,11 @@ impl PlaybookCommandTrait for PrintCommandTask {
         let processed_temp: String;
         {
             let facts = FACTS.read().unwrap();
+            
+
+            // add to facts the content of the playbook settings
+            println!("facts: {:?}", facts.context);
+
             processed_temp = config_proc::process_template(&template, &facts.context).unwrap();
         }
 

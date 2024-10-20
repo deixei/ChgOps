@@ -5,10 +5,13 @@ use serde_json::Value as JsonValue;
 use std::error::Error;
 use std::fs;
 use tera::{Tera, Context};
-use crate::collections::{dx::yaml_handler};
+use crate::collections::dx::yaml_handler;
 use super::{core::filters, files_and_dirs};
 use std::path::Path;
-use crate::{print_error, print_info, print_success, print_warning};
+use crate::print_error;
+
+// use crate::{print_error, print_info, print_success, print_warning};
+
 /// Reads a YAML file from the specified file path and returns the parsed YAML value.
 pub fn read_yaml(file_path: &str) -> Result<serde_yaml::Value, Box<dyn Error>> {
     // Check if the file exists before attempting to read it

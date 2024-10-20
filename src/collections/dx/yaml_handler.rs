@@ -4,7 +4,9 @@ use std::fmt;
 use yaml_merge_keys::merge_keys;
 use serde_yaml;
 use serde_json;
-use crate::{print_error, print_info, print_success, print_warning};
+
+use crate::print_error;
+//use crate::{print_error, print_info, print_success, print_warning};
 
 // Define a custom error type for better error handling
 #[derive(Debug)]
@@ -34,7 +36,7 @@ impl From<(yaml_rust2::ScanError, String)> for YamlMergeError {
     }
 }
 
-pub fn get_error_snippet(yaml_content: &str, line: usize, col: usize) -> String {
+pub fn get_error_snippet(yaml_content: &str, line: usize, _col: usize) -> String {
     let lines: Vec<&str> = yaml_content.lines().collect();
     let start = if line > 2 { line - 2 } else { 0 };
     let end = if line + 3 < lines.len() { line + 3 } else { lines.len() };
