@@ -75,55 +75,17 @@ l:
     value: 3
   - name: c
     value: 4
-name: demo-playbook
-dependencies:
-  source: "https://deixei.azure.com"
-  collections:
-    - name: dx.azure
-      version: 1.0.0
-mytags:
-  Owner: demo@deixei.com
-  TechOwner: demo@deixei.com
-  Ecosystem: MY-DEMO
-  Department: MY-DEPARTMENT-123
-  OperationalContact: demo@deixei.com
-  CostCenter: "22222222"
-params:
-  time: "2024-10-20T15:15:16.229663955Z"
-  client_id: 209badfd-aca6-4348-8993-c233768a3666
+name: playbook
 self:
-  sites_name: marcio
-  serverfarms_asp_externalid: marcio
-  subscription: marcio
-  resourceGroup: marcio
-vars:
-  var1: this is a string variable
-  var3: "https://deixei.azure.com"
-bom:
-  webapp1:
-    parameters:
-      parameters:
-        sites_name:
-          value: demo1
-        serverfarms_asp_externalid:
-          value: demo2
-  webapp2:
-    parameters:
-      parameters:
-        sites_name:
-          value: demo3
-        serverfarms_asp_externalid:
-          value: demo3
+  name: demo-playbook
+  description: This is a simple playbook
 settings:
-  name: workspace2 - Run commands on the local host
-  vars:
-    when_me: marcio
-    ansible_connection: local
-    ansible_python_interpreter: /usr/bin/python3
+  name: demo-playbook
+  description: This is a simple playbook
 tasks:
   - dx.core.print:
       command: info
-      name: demo
       vars:
-        resource: "{{ settings | as_json }}"
-      when: "{{ settings.vars.when_me == 'marcio' }}"
+        resource: "{{ self | as_json }}"
+      name: Information
+      register: info1

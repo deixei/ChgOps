@@ -220,7 +220,7 @@ impl ChgOpsWorkspace {
                         {
                             let mut facts = FACTS.write().unwrap();
                             facts.context.insert("settings", &self.playbook.settings);
-                            println!("facts.context: {:#?}", facts.context);
+                            //println!("facts.context: {:#?}", facts.context);
                         } 
 
                     },

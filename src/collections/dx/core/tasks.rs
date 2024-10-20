@@ -206,11 +206,6 @@ impl PlaybookCommandTrait for PrintCommandTask {
         let processed_temp: String;
         {
             let facts = FACTS.read().unwrap();
-            
-
-            // add to facts the content of the playbook settings
-            println!("facts: {:?}", facts.context);
-
             processed_temp = config_proc::process_template(&template, &facts.context).unwrap();
         }
 
