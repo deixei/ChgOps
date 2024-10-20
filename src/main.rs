@@ -3,6 +3,9 @@ use collections::dx::yaml_handler;
 pub mod collections;
 use crate::collections::dx::WORKSPACE;
 
+pub mod command_line;
+//use crate::command_line::collection;
+
 fn cli() -> Command {
 
     Command::new("chgops")
@@ -89,6 +92,35 @@ fn cli() -> Command {
                     .short('v')
                     .required(true)),
         )
+        .subcommand(
+            Command::new("collection")
+                .about("Manages collections")
+                .subcommand(
+                    Command::new("init")
+                        .about("Initializes a collection")
+                        .arg(Arg::new("name")
+                            .long("name")
+                            .short('n')
+                            .required(true))
+                        .arg(Arg::new("collection")
+                            .long("collection")
+                            .short('c')
+                            .required(true))
+                        .arg(Arg::new("force")
+                            .long("force")
+                            .short('f')
+                            .help("Force initialization on vars files")
+                            .action(clap::ArgAction::SetTrue)),
+                )
+                .subcommand(
+                    Command::new("test")
+                        .about("Tests a collection")
+                        .arg(Arg::new("scope")
+                            .long("scope")
+                            .short('s')
+                            .required(true)),
+                ),
+        )
 }
 
 fn main() {
@@ -157,6 +189,24 @@ fn main() {
                 sub_matches.get_one::<String>("name").expect("required"),
                 sub_matches.get_one::<String>("version").expect("required")
             );
+        }
+        Some(("collection", sub_matches)) => {
+            // ./chgops collection init -n demo -c basic 
+            match sub_matches.subcommand() {
+                Some(("init", sub_matches)) => {
+                    let name = sub_matches.get_one::<String>("name").expect("required");
+                    let collection = sub_matches.get_one::<String>("collection").expect("required");
+                    let force = sub_matches.get_flag("force");
+
+                    let _ = command_line::collection::collection_init(name.as_str(), collection.as_str(), force);
+                }
+                Some(("test", sub_matches)) => {
+                    let scope = sub_matches.get_one::<String>("scope").expect("required");
+                    let _ = command_line::collection::collection_test(scope.as_str());
+                }
+
+                _ => unreachable!(), // If all subcommands are defined above, anything else is unreachable!
+            }
         }
         Some((ext, sub_matches)) => {
             let args = sub_matches

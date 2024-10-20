@@ -153,10 +153,6 @@ impl ChgOpsWorkspace {
         format!("{}/{}.yaml", &self.workspace_path(), &self.playbook_name)
     }
 
-    pub fn vars_full_path(&mut self) -> String {
-        format!("{}/vars.yaml", &self.workspace_path())
-    }
-
     pub fn config_full_path(&mut self) -> String {
         format!("{}/config.yaml", &self.workspace_path())
     }
@@ -262,7 +258,6 @@ impl ChgOpsWorkspace {
         println!("\t\tCurrent Dir: {}", &self.current_dir);
         println!("\t\tPlaybook Full Path: {}", self.playbook_full_path());
         println!("\t\tConfigurations Full Path: {}", self.config_full_path());
-        println!("\t\tVariables Full Path: {}", self.vars_full_path());
         println!("#############################################");
 
         self.playbook.display(Some(self.verbose.clone()));

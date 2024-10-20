@@ -68,6 +68,10 @@ pub fn read_file(file_path: &str) -> Result<String, Box<dyn std::error::Error>> 
 }
 
 pub fn write_file(file_path: &str, content: &String) -> Result<(), Box<dyn std::error::Error>> {
+    let file_dir = std::path::Path::new(file_path).parent().unwrap();
+    if !file_dir.exists() {
+        fs::create_dir_all(file_dir)?;
+    }
     let mut file = File::create(file_path)?;
     file.write_all(content.as_bytes())?;
     Ok(())

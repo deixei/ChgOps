@@ -1,6 +1,14 @@
 # Collections
 
-...
+Collections are formed with namespace / collections / modules
+
+A new collection will have to provide a namespace name and a collection name, the first module will be named core. each folder level will have a README.md and a vars.yaml file.
+
+```bash
+./chgops collection init -n demo -c basic 
+```
+
+tiggers the creation of a new data collection structure.
 
 
 ## Author

@@ -1,0 +1,186 @@
+---
+demo:
+  basic:
+    core: to be changed
+common_vars:
+  version: 1.0.0
+  kind: common_vars
+  validation:
+    stages:
+      d:
+        - Development
+        - dev
+        - 0
+        - l
+      t:
+        - Testing
+        - tst
+        - 1
+        - l
+      s:
+        - Staging
+        - stg
+        - 2
+        - h
+      p:
+        - Production
+        - prd
+        - 3
+        - h
+      g:
+        - Global
+        - glb
+        - 4
+        - h
+    stage_classifications:
+      l:
+        - Lower
+        - lw
+        - 0
+      h:
+        - Higher
+        - hr
+        - 1
+  central_data:
+    url: "http://localhost:8080"
+    ado_organization: deixeicom
+tags:
+  Owner: b1
+  TechOwner: rust@deixei.com
+  Ecosystem: ECOSYSTEM-NAME
+  Department: MY-DEPARTMENT-CODE
+  OperationalContact: rust@deixei.com
+  CostCenter: "1111111111"
+locations:
+  - East US
+  - West Europe
+  - North Europe
+  - Switzerland North
+  - Japan East
+  - France Central
+resource_types:
+  - virtual_machines
+  - virtual_networks
+  - resource_groups
+  - storage_accounts
+providers:
+  -
+    namespace: Astronomer.Astro
+  -
+    namespace: Dynatrace.Observability
+  -
+    namespace: Microsoft.Billing
+caf:
+  default_location: West Europe
+  default_pair_location: North Europe
+  mgmt_group:
+    -
+      name: top
+      children:
+        -
+          name: mgmt1
+        -
+          name: mgmt2
+        -
+          name: mgmt3
+n1: "to be changed"
+blueprint1:
+  description: Web app with private endpoint
+  parameters:
+    $schema: "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#"
+    contentVersion: 1.0.0.0
+    parameters:
+      sites_name:
+        value: "marcio"
+      serverfarms_asp_externalid:
+        value: "marcio"
+  template:
+    $schema: "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#"
+    contentVersion: 1.0.0.0
+    parameters:
+      sites_name:
+        defaultValue: "marcio"
+        type: String
+      serverfarms_asp_externalid:
+        defaultValue: "/subscriptions/marcio/resourceGroups/marcio/providers/Microsoft.Web/serverfarms/marcio-asp"
+        type: String
+      tags: "[object]"
+ref:
+  merged_key: merged
+  added_key: merged
+l:
+  -
+    name: a
+    value: 2
+  -
+    name: b
+    value: 3
+  -
+    name: c
+    value: 4
+name:
+  description: marcio
+  merged_key: merged
+  added_key: merged
+blueprint2:
+  description: Web app with private endpoint
+  parameters:
+    $schema: "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#"
+    contentVersion: 1.0.0.0
+    parameters:
+      sites_name:
+        value: "marcio"
+      serverfarms_asp_externalid:
+        value: "marcio"
+  template:
+    $schema: "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#"
+    contentVersion: 1.0.0.0
+    parameters:
+      sites_name:
+        defaultValue: "marcio"
+        type: String
+      serverfarms_asp_externalid:
+        defaultValue: "/subscriptions/marcio/resourceGroups/marcio/providers/Microsoft.Web/serverfarms/marcio-asp"
+        type: String
+dict:
+  top_key: given
+  merged_key: given
+dependencies:
+  source: "https://deixei.azure.com"
+  collections:
+    -
+      name: dx.azure
+      version: 1.0.0
+mytags:
+  Owner: demo@deixei.com
+  TechOwner: demo@deixei.com
+  Ecosystem: MY-DEMO
+  Department: MY-DEPARTMENT-123
+  OperationalContact: demo@deixei.com
+  CostCenter: "22222222"
+params:
+  time: "2024-10-20T11:44:14.799730929Z"
+  client_id: "209badfd-aca6-4348-8993-c233768a3666"
+self:
+  sites_name: marcio
+  serverfarms_asp_externalid: marcio
+  subscription: marcio
+  resourceGroup: marcio
+vars:
+  var1: this is a string variable
+  var3: "https://deixei.azure.com"
+bom:
+  webapp1:
+    parameters:
+      parameters:
+        sites_name:
+          value: demo1
+        serverfarms_asp_externalid:
+          value: demo2
+  webapp2:
+    parameters:
+      parameters:
+        sites_name:
+          value: demo3
+        serverfarms_asp_externalid:
+          value: demo3
