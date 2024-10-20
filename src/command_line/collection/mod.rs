@@ -1,68 +1,102 @@
+/// Initializes a collection within a specified namespace. This involves creating necessary
+/// directories and files, and optionally updating existing files if `force_update` is true.
+///
+/// # Arguments
+///
+/// * `namespace_name` - The name of the namespace where the collection will be initialized.
+/// * `collection_name` - The name of the collection to initialize.
+/// * `force_update` - A boolean flag indicating whether to force update existing files.
+///
+/// # Example
+///
+/// ```rust
+/// collection_init("my_namespace", "my_collection", true);
+/// ```
+///
+/// This will create the following directory structure:
+///
+/// ```
+/// ./collections/my_namespace/my_collection/core
+/// ```
+///
+/// And the following files with their respective contents:
+///
+/// ```
+/// ./collections/my_namespace/vars.yaml
+/// ./collections/my_namespace/my_collection/vars.yaml
+/// ./collections/my_namespace/my_collection/core/vars.yaml
+/// ```
 use crate::{print_error, print_info, print_success, print_warning};
 use std::fs;
 use std::path::Path;
+
+fn create_folder(path: &Path, description: &str) -> bool {
+    if !path.exists() {
+        print_info!("Creating {} folder: {:?}", description, path);
+        match fs::create_dir_all(path) {
+            Ok(_) => {
+                print_success!("{} folder created: {:?}", description, path);
+                true
+            },
+            Err(e) => {
+                print_error!("Failed to create {} folder: {:?}: {}", description, path, e);
+                false
+            }
+        }
+    } else {
+        print_warning!("{} folder already exists: {:?}", description, path);
+        false
+    }
+}
+
+fn create_or_update_file(path: &Path, content: &str, description: &str, force_update: bool) {
+    if !path.exists() || force_update {
+        let action = if path.exists() { "Updating" } else { "Creating" };
+        print_info!("{} {} file: {:?}", action, description, path);
+        match fs::write(path, content) {
+            Ok(_) => {
+                print_success!("{} file {}: {:?}", description, action.to_lowercase(), path);
+            },
+            Err(e) => {
+                print_error!("Failed to {} {} file: {:?}: {}", action.to_lowercase(), description, path, e);
+            }
+        }
+    } else {
+        print_warning!("{} file already exists: {:?}", description, path);
+    }
+}
+
 pub fn collection_init(namespace_name: &str, collection_name: &str, force_update: bool) {
-    print_info!("Initializing collection: {}.{}", namespace_name, collection_name);
-    // find a folder with the name "collection" in the current directory
-    // if it doesn't exist, create it
-    // create a folder with the name "namespace_name" in the "collection" folder if it doesn't exist
-    // create a folder with the name "collection_name" in the "namespace_name" folder if it doesn't exist
-    // create a folder with the name "core" in the "collection_name" folder if it doesn't exist
-    
-    let collections_folder = format!("./collections");
-    let namespace_folder = format!("{}/{}", collections_folder, namespace_name);
-    let collection_folder = format!("{}/{}", namespace_folder, collection_name);
-    let core_folder = format!("{}/core", collection_folder);
-
-    let path_collections_folder = Path::new(&collections_folder);
-    let path_namespace_folder = Path::new(&namespace_folder);
-    let path_collection_folder = Path::new(&collection_folder);
-    let path_core_folder = Path::new(&core_folder);
-
-    if !path_collections_folder.exists() {
-        print_info!("Creating collections folder: {}", collections_folder);
-        let error_msg = format!("Failed to create collections {} folder", collections_folder);
-
-        fs::create_dir_all(&collections_folder).expect(error_msg.as_str());
+    if force_update {
+        print_info!("Starting Collection Initializing process for: {}.{} in force mode", namespace_name, collection_name);
     } else {
-        print_warning!("Collections folder already exists: {}", collections_folder);
+        print_info!("Starting Collection Initializing process for: {}.{}", namespace_name, collection_name);
     }
 
-    if !path_namespace_folder.exists() {
-        print_info!("Creating namespace folder: {}", namespace_folder);
-        let error_msg = format!("Failed to create namespace {} folder", namespace_folder);
-
-        fs::create_dir_all(&namespace_folder).expect(error_msg.as_str());
-    } else {
-        print_warning!("Namespace folder already exists: {}", namespace_folder);
+    //namespace_name must be a non empty string with more than 2 characters
+    if namespace_name.len() < 2 {
+        print_error!("Invalid namespace name: {}. Namespace name must be a non empty string with more than 2 characters", namespace_name);
+        return;
     }
 
-    if !path_collection_folder.exists() {
-        print_info!("Creating collection folder: {}", collection_folder);
-        let error_msg = format!("Failed to create collection {} folder", collection_folder);
-
-        fs::create_dir_all(&collection_folder).expect(error_msg.as_str());
-    } else {
-        print_warning!("Collection folder already exists: {}", collection_folder);
+    if collection_name.len() < 2 {
+        print_error!("Invalid collection name: {}. Collection name must be a non empty string with more than 2 characters", collection_name);
+        return;
     }
 
-    if !path_core_folder.exists() {
-        print_info!("Creating core folder: {}", core_folder);
-        let error_msg = format!("Failed to create core {} folder", core_folder);
+    let collections_folder = Path::new("./collections");
+    let namespace_folder = collections_folder.join(namespace_name);
+    let collection_folder = namespace_folder.join(collection_name);
+    let core_folder = collection_folder.join("core");
 
-        fs::create_dir_all(&core_folder).expect(error_msg.as_str());
-    } else {
-        print_warning!("Core folder already exists: {}", core_folder);
-    }
+    create_folder(collections_folder, "collections");
+    create_folder(&namespace_folder, "namespace");
+    create_folder(&collection_folder, "collection");
+    create_folder(&core_folder, "core");
 
-
-    let namespace_vars_file = format!("{}/vars.yaml", namespace_folder);
-    let collection_vars_file = format!("{}/vars.yaml", collection_folder);
-    let core_vars_file = format!("{}/vars.yaml", core_folder);
-
-    let path_namespace_vars_file = Path::new(&namespace_vars_file);
-    let path_collection_vars_file = Path::new(&collection_vars_file);
-    let path_core_vars_file = Path::new(&core_vars_file);
+    let namespace_vars_file = namespace_folder.join("vars.yaml");
+    let collection_vars_file = collection_folder.join("vars.yaml");
+    let core_vars_file = core_folder.join("vars.yaml");
 
     let namespace_vars = format!("#!chgops.namespace\n{}: level1\n", namespace_name);
     let collection_vars = format!("#!chgops.collection\n{}_{}: level2\n", namespace_name, collection_name);
@@ -70,57 +104,93 @@ pub fn collection_init(namespace_name: &str, collection_name: &str, force_update
 {}_{}_core: level2
 "#, namespace_name, collection_name);
 
-    if !path_namespace_vars_file.exists() {
-        print_info!("Creating namespace vars file: {}", namespace_vars_file);
-        let error_msg = format!("Failed to create namespace {} vars file", namespace_vars_file);
+    create_or_update_file(&namespace_vars_file, &namespace_vars, "namespace vars", force_update);
+    create_or_update_file(&collection_vars_file, &collection_vars, "collection vars", force_update);
+    create_or_update_file(&core_vars_file, &core_vars, "core vars", force_update);
 
-        fs::write(&namespace_vars_file, namespace_vars).expect(error_msg.as_str());
-    } else {
-        if force_update {
-            print_info!("Updating namespace vars file: {}", namespace_vars_file);
-            let error_msg = format!("Failed to update namespace {} vars file", namespace_vars_file);
-
-            fs::write(&namespace_vars_file, namespace_vars).expect(error_msg.as_str());
-        } else {
-            print_warning!("Namespace vars file already exists: {}", namespace_vars_file);
-        }
-    }
-
-    if !path_collection_vars_file.exists() {
-        print_info!("Creating collection vars file: {}", collection_vars_file);
-        let error_msg = format!("Failed to create collection {} vars file", collection_vars_file);
-
-        fs::write(&collection_vars_file, collection_vars).expect(error_msg.as_str());
-    } else {
-        if force_update {
-            print_info!("Updating collection vars file: {}", collection_vars_file);
-            let error_msg = format!("Failed to update collection {} vars file", collection_vars_file);
-
-            fs::write(&collection_vars_file, collection_vars).expect(error_msg.as_str());
-        } else {
-            print_warning!("Collection vars file already exists: {}", collection_vars_file);
-        }
-    }
-
-    if !path_core_vars_file.exists() {
-        print_info!("Creating core vars file: {}", core_vars_file);
-        let error_msg = format!("Failed to create core {} vars file", core_vars_file);
-
-        fs::write(&core_vars_file, core_vars).expect(error_msg.as_str());
-    } else {
-        if force_update {
-            print_info!("Updating core vars file: {}", core_vars_file);
-            let error_msg = format!("Failed to update core {} vars file", core_vars_file);
-
-            fs::write(&core_vars_file, core_vars).expect(error_msg.as_str());
-        } else {
-            print_warning!("Core vars file already exists: {}", core_vars_file);
-        }
-    }
-
-
+    print_success!("Collection {}.{} initialized.", namespace_name, collection_name);
 }
 
 pub fn collection_test(scope: &str) {
+    // scope is a combination of namespace and collection names, separated by a dot, e.g. "my_namespace.my_collection"
+    let parts: Vec<&str> = scope.split('.').collect();
+    if parts.len() != 2 {
+        print_error!("Invalid scope format: {}. Expected format: namespace.collection", scope);
+        return;
+    }
+    let namespace_name = parts[0];
+    let collection_name = parts[1];
     print_info!("Testing collection: {}", scope);
+
+    //namespace_name must be a non empty string with more than 2 characters
+    if namespace_name.len() < 2 {
+        print_error!("Invalid namespace name: {}. Namespace name must be a non empty string with more than 2 characters", namespace_name);
+        return;
+    }
+
+    if collection_name.len() < 2 {
+        print_error!("Invalid collection name: {}. Collection name must be a non empty string with more than 2 characters", collection_name);
+        return;
+    }
+
+    let collections_folder = Path::new("./collections");
+    let namespace_folder = collections_folder.join(namespace_name);
+    let collection_folder = namespace_folder.join(collection_name);
+    let core_folder = collection_folder.join("core");
+
+    if !collections_folder.exists() {
+        print_error!("Collections folder not found: {:?}", collections_folder);
+    }
+    else {
+        print_success!("Collections folder found: {:?}", collections_folder);
+    }
+
+    if !namespace_folder.exists() {
+        print_error!("Namespace folder not found: {:?}", namespace_folder);
+    }
+    else {
+        print_success!("Namespace folder found: {:?}", namespace_folder);
+    }
+
+    if !collection_folder.exists() {
+        print_error!("Collection folder not found: {:?}", collection_folder);
+    }
+    else {
+        print_success!("Collection folder found: {:?}", collection_folder);
+    }
+
+    if !core_folder.exists() {
+        print_error!("Core folder not found: {:?}", core_folder);
+    }
+    else {
+        print_success!("Core folder found: {:?}", core_folder);
+    }
+
+    let namespace_vars_file = namespace_folder.join("vars.yaml");
+    let collection_vars_file = collection_folder.join("vars.yaml");
+    let core_vars_file = core_folder.join("vars.yaml");
+
+    if namespace_vars_file.exists() {
+        print_success!("Namespace vars file found: {:?}", namespace_vars_file);
+    }
+    else {
+        print_error!("Namespace vars file not found: {:?}", namespace_vars_file);
+    }
+
+    if collection_vars_file.exists() {
+        print_success!("Collection vars file found: {:?}", collection_vars_file);
+    }
+    else {
+        print_error!("Collection vars file not found: {:?}", collection_vars_file);
+    }
+
+    if core_vars_file.exists() {
+        print_success!("Core vars file found: {:?}", core_vars_file);
+    }
+    else {
+        print_error!("Core vars file not found: {:?}", core_vars_file);
+    }
+
+
+
 }

@@ -1,0 +1,4 @@
+#!chgops
+self: 
+    name: demo-playbook    
+    description: "This is a simple playbook"

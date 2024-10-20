@@ -22,7 +22,13 @@ fn cli() -> Command {
                 .arg(Arg::new("template")
                     .long("template")
                     .short('t')
-                    .required(true)),
+                    .default_value("default")
+                    .required(false))
+                .arg(Arg::new("force")
+                    .long("force")
+                    .short('f')
+                    .help("Force initialization on vars files")
+                    .action(clap::ArgAction::SetTrue)),
         )
         .subcommand(
             Command::new("run")
@@ -132,11 +138,12 @@ fn main() {
         Some(("init", sub_matches)) => {
             let name = sub_matches.get_one::<String>("name").expect("required");
             let template = sub_matches.get_one::<String>("template").expect("required");
-            println!(
-                "Initializing with name: {}, template: {}",
-                name,
-                template
-            );
+            let force = sub_matches.get_flag("force");
+            
+            println!("Initializing with name: {}, template: {}", name, template);
+            {
+                let _ = command_line::init::action_init(name.as_str(), template.as_str(), force);
+            }
 
         }
         Some(("run", sub_matches)) => {

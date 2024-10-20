@@ -1,0 +1,14 @@
+#!chgops
+# Description: This is a simple playbook.
+---
+name: playbook
+settings:
+    name: demo-playbook
+    description: "This is a simple playbook"
+tasks:
+  - dx.core.print:
+      command: "info"
+      vars:
+        resource: "{{ self | as_json }}"
+      name: "Information"
+      register: info1
