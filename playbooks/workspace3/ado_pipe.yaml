@@ -1,0 +1,7 @@
+steps:
+- task: VSBuild@1
+  displayName: Build
+  timeoutInMinutes: 120
+  inputs:
+    solution: '**\*.sln'
+    
